@@ -916,6 +916,7 @@ class Game {
     this.maxComboEver = 0;
     this.comboBroken = false;
     this.comboPopups = [];     // [{text, x, y, life}]
+    this.particles = [];       // [{x, y, vx, vy, color, life}] - 파티클 효과
 
     // ── 타이머 ──
     this.stageTimer = 0;       // 프레임 단위
@@ -1134,6 +1135,10 @@ class Game {
     if (p.dashTimer > 0) {
       moveX = p.dashDir * def.speed * 3.2;
       p.dashTimer--;
+      // ✨ 대시 트레일 파티클
+      if (this.frameCount % 2 === 0) {
+        this._spawnParticles(p.x + p.w / 2, p.y + p.h / 2, '#ccccff', 3);
+      }
     }
 
     // 사다리 체크
@@ -1245,6 +1250,16 @@ class Game {
       return cp.life > 0;
     });
 
+    // ── 파티클 틱 ──
+    this.particles = this.particles.filter(pt => {
+      pt.x += pt.vx;
+      pt.y += pt.vy;
+      pt.vy += 0.2; // 중력
+      pt.vx *= 0.98; // 마찰
+      pt.life--;
+      return pt.life > 0;
+    });
+
     // ── 자석 효과: 근처 과일 자동 수집 ──
     if (this.effectMagnet > 0) {
       for (const f of this.fruits) {
@@ -1283,6 +1298,8 @@ class Game {
         // 🔊 사운드
         if (this.combo >= 2) SFX.combo();
         else SFX.coin();
+        // ✨ 파티클 생성
+        this._spawnParticles(f.x + 10, f.y + 10, this.combo >= 2 ? '#ffff00' : '#00ffff', 8);
         // 미션: 과일 총 수집
         SAVE.set('totalFruits', SAVE.get('totalFruits', 0) + 1);
         if (this.combo >= 5)  SAVE.set('maxCombo5',  1);
@@ -1302,6 +1319,8 @@ class Game {
         if (it.type === 'speed')  { this.effectSpeed  = 240; }
         this.comboPopups.push({ text: it.type.toUpperCase() + '!', x: it.x, y: it.y - 10, life: 80, combo: 0 });
         SFX.item(); // 🔊 아이템 획득 사운드
+        // ✨ 아이템 파티클 (더 화려하게)
+        this._spawnParticles(it.x + 11, it.y + 11, '#ff88ff', 12);
       }
     }
 
@@ -1495,6 +1514,22 @@ class Game {
         document.getElementById('controls').style.display = 'none';
         this._removeInput();
       };
+    }
+  }
+
+  // ── 파티클 생성 ────────────────────────────────────────
+  _spawnParticles(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 * i) / count;
+      const speed = 1.5 + Math.random() * 1.5;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - Math.random() * 2,
+        color,
+        life: 30 + Math.floor(Math.random() * 15),
+      });
     }
   }
 
@@ -1693,6 +1728,15 @@ class Game {
     const rem = this.fruits.filter(f => !f.collected).length;
     ctx.fillStyle = '#ffaa00'; ctx.font = '9px Courier New';
     ctx.fillText(`LEFT:${rem}`, W/2 - 16, H - 136);
+
+    // 파티클
+    for (const pt of this.particles) {
+      const alpha = Math.min(1, pt.life / 15);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = pt.color;
+      ctx.fillRect(Math.round(pt.x - 2), Math.round(pt.y - 2), 4, 4);
+    }
+    ctx.globalAlpha = 1;
 
     // 콤보 팝업
     for (const cp of this.comboPopups) {
