@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>RACCOON ADVENTURE</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Courier New', monospace;
+    }
+    #gameContainer {
+      position: relative;
+      width: 360px;
+      height: 640px;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+    /* 캐릭터 선택 화면 */
+    #selectScreen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #fff;
+      z-index: 10;
+    }
+    #selectScreen h1 {
+      font-size: 22px;
+      color: #00ffff;
+      text-shadow: 2px 2px #005555;
+      margin-top: 30px;
+      letter-spacing: 4px;
+    }
+    #selectScreen h2 {
+      font-size: 12px;
+      color: #ffff00;
+      margin-top: 8px;
+      letter-spacing: 2px;
+    }
+    .charCards {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 24px;
+      width: 90%;
+    }
+    .charCard {
+      border: 2px solid #444;
+      background: #111;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .charCard:hover, .charCard.selected {
+      border-color: #00ffff;
+      background: #001a1a;
+    }
+    .charIcon {
+      width: 52px;
+      height: 52px;
+      flex-shrink: 0;
+    }
+    .charInfo { flex: 1; }
+    .charName {
+      font-size: 14px;
+      font-weight: bold;
+      color: #00ffff;
+      letter-spacing: 2px;
+      margin-bottom: 4px;
+    }
+    .charDesc {
+      font-size: 10px;
+      color: #aaa;
+      margin-bottom: 6px;
+    }
+    .statRow {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .statLine {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9px;
+      color: #888;
+    }
+    .statLabel { width: 40px; color: #ffff00; }
+    .statBar {
+      flex: 1;
+      height: 6px;
+      background: #222;
+      border: 1px solid #444;
+    }
+    .statFill {
+      height: 100%;
+      background: #00ff88;
+    }
+    .statFill.mid { background: #ffaa00; }
+    .statFill.low { background: #ff4444; }
+    #startBtn {
+      margin-top: 20px;
+      padding: 12px 40px;
+      font-size: 16px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 4px;
+      background: #000;
+      color: #00ffff;
+      border: 2px solid #00ffff;
+      cursor: pointer;
+    }
+    #startBtn:hover { background: #00ffff; color: #000; }
+    #startBtn:disabled { border-color: #333; color: #333; cursor: default; background: #000; }
+
+    /* 잠금 뱃지 */
+    .charCard.locked { opacity: 0.5; cursor: default; }
+    .charCard.locked:hover { border-color: #444 !important; background: #111 !important; }
+    .lockBadge {
+      font-size: 9px; color: #ff8844; margin-top: 4px;
+      letter-spacing: 1px;
+    }
+
+    /* 미션 패널 */
+    #missionBtn {
+      margin-top: 8px;
+      padding: 6px 20px;
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 2px;
+      background: #000;
+      color: #ffaa00;
+      border: 1px solid #ffaa00;
+      cursor: pointer;
+      width: 90%;
+    }
+    #missionBtn:hover { background: #1a0e00; }
+    #missionPanel {
+      display: none;
+      width: 90%;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      padding: 10px;
+      margin-top: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      color: #ccc;
+    }
+    #dailyInfo {
+      font-size: 9px;
+      margin-top: 6px;
+      letter-spacing: 1px;
+      text-align: center;
+      width: 90%;
+    }
+
+    /* 게임 오버 / 스테이지 클리어 오버레이 */
+    #overlay {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      color: #fff;
+    }
+    #overlay h2 {
+      font-size: 28px;
+      letter-spacing: 4px;
+      text-shadow: 2px 2px #000;
+    }
+    #overlay p { margin-top: 10px; font-size: 14px; color: #aaa; }
+    #overlay button {
+      margin-top: 24px;
+      padding: 10px 32px;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 3px;
+      background: #000;
+      color: #ffff00;
+      border: 2px solid #ffff00;
+      cursor: pointer;
+    }
+    #overlay button:hover { background: #ffff00; color: #000; }
+
+    /* 터치 컨트롤 */
+    #controls {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%;
+      height: 130px;
+      display: none;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .dpad {
+      position: absolute;
+      left: 12px;
+      bottom: 16px;
+      width: 130px;
+      height: 114px;
+      pointer-events: auto;
+    }
+    .dpad-btn {
+      position: absolute;
+      width: 38px;
+      height: 38px;
+      background: rgba(255,255,255,0.12);
+      border: 2px solid rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: rgba(255,255,255,0.7);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #btnUp    { left: 46px; top: 0; }
+    #btnLeft  { left: 0;    top: 38px; }
+    #btnRight { left: 92px; top: 38px; }
+    #btnDown  { left: 46px; top: 76px; }
+
+    #btnJump {
+      position: absolute;
+      right: 16px;
+      bottom: 20px;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(0, 220, 100, 0.18);
+      border: 2px solid rgba(0, 220, 100, 0.5);
+      color: rgba(0,220,100,0.9);
+      font-size: 11px;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .btn-active {
+      background: rgba(255,255,255,0.3) !important;
+      border-color: rgba(255,255,255,0.7) !important;
+    }
+    #btnJump.btn-active {
+      background: rgba(0, 220, 100, 0.45) !important;
+      border-color: rgba(0,220,100,1) !important;
+    }
+  </style>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="gameCanvas" width="360" height="640"></canvas>
+
+  <!-- 캐릭터 선택 화면 -->
+  <div id="selectScreen">
+    <h1>RACCOON</h1>
+    <h2>ADVENTURE</h2>
+    <div class="charCards">
+
+      <!-- 너구리 -->
+      <div class="charCard selected" data-char="raccoon" onclick="selectChar(this,'raccoon')">
+        <canvas class="charIcon" id="icon0" width="52" height="52"></canvas>
+        <div class="charInfo">
+          <div class="charName">RACCOON</div>
+          <div class="charDesc">밸런스형 · 기본 주인공</div>
+          <div class="statRow">
+            <div class="statLine">
+              <span class="statLabel">SPEED</span>
+              <div class="statBar"><div class="statFill mid" style="width:60%"></div></div>
+            </div>
+            <div class="statLine">
+              <span class="statLabel">JUMP</span>
+              <div class="statBar"><div class="statFill mid" style="width:60%"></div></div>
+            </div>
+            <div class="statLine">
+              <span class="statLabel">SKILL</span>
+              <div class="statBar"><div class="statFill mid" style="width:50%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 여우 -->
+      <div class="charCard" data-char="fox" onclick="selectChar(this,'fox')">
+        <canvas class="charIcon" id="icon1" width="52" height="52"></canvas>
+        <div class="charInfo">
+          <div class="charName">FOX</div>
+          <div class="charDesc">점프형 · 2단 점프 가능</div>
+          <div class="statRow">
+            <div class="statLine">
+              <span class="statLabel">SPEED</span>
+              <div class="statBar"><div class="statFill low" style="width:35%"></div></div>
+            </div>
+            <div class="statLine">
+              <span class="statLabel">JUMP</span>
+              <div class="statBar"><div class="statFill" style="width:90%"></div></div>
+            </div>
+            <div class="statLine">
+              <span class="statLabel">SKILL</span>
+              <div class="statBar"><div class="statFill" style="width:85%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 토끼 -->
+      <div class="charCard" data-char="rabbit" onclick="selectChar(this,'rabbit')">
+        <canvas class="charIcon" id="icon2" width="52" height="52"></canvas>
+        <div class="charInfo">
+          <div class="charName">RABBIT</div>
+          <div class="charDesc">스피드형 · 대시 스킬</div>
+          <div class="statRow">
+            <div class="statLine">
+              <span class="statLabel">SPEED</span>
+              <div class="statBar"><div class="statFill" style="width:95%"></div></div>
+            </div>
+            <div class="statLine">
+              <span class="statLabel">JUMP</span>
+              <div class="statBar"><div class="statFill low" style="width:35%"></div></div>
+            </div>
+            <div class="statLine">
+              <span class="statLabel">SKILL</span>
+              <div class="statBar"><div class="statFill mid" style="width:70%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div id="dailyInfo"></div>
+    <button id="missionBtn" onclick="openMissions()">▶ MISSIONS &amp; DAILY</button>
+    <div id="missionPanel"></div>
+    <div style="margin-top:10px;font-size:9px;color:#555;letter-spacing:1px;text-align:center;line-height:1.8;">
+      ARROW KEYS / WASD · SPACE = JUMP<br>
+      RABBIT: JUMP×2 = DASH &nbsp;|&nbsp; FOX: AIR JUMP
+    </div>
+    <button id="startBtn" onclick="startGame()">START</button>
+  </div>
+
+  <!-- 게임 오버 / 클리어 오버레이 -->
+  <div id="overlay">
+    <h2 id="overlayTitle"></h2>
+    <p id="overlayMsg"></p>
+    <button id="overlayBtn" onclick="handleOverlayBtn()"></button>
+  </div>
+
+  <!-- 터치 컨트롤 -->
+  <div id="controls">
+    <div class="dpad">
+      <div class="dpad-btn" id="btnUp">▲</div>
+      <div class="dpad-btn" id="btnLeft">◀</div>
+      <div class="dpad-btn" id="btnRight">▶</div>
+      <div class="dpad-btn" id="btnDown">▼</div>
+    </div>
+    <div id="btnJump">JUMP</div>
+  </div>
+</div>
+
+<script src="game.js"></script>
+<script>
+  // game.js 로드 후 선택 화면 초기화
+  updateSelectScreen();
+</script>
+</body>
+</html>
