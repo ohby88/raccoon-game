@@ -7,6 +7,179 @@ const ctx = canvas.getContext('2d');
 const W = 360, H = 640;
 
 // ────────────────────────────────────────────────────────────
+//  사운드 시스템 (Web Audio API - 8비트 레트로 사운드)
+// ────────────────────────────────────────────────────────────
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+const SFX = {
+  // 점프 사운드 (짧은 상승 톤)
+  jump: () => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(500, audioCtx.currentTime + 0.1);
+
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.1);
+  },
+
+  // 과일 먹기 (팅! 소리)
+  coin: () => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.08);
+
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.08);
+  },
+
+  // 콤보 (높은 톤)
+  combo: () => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.12);
+
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.12);
+  },
+
+  // 아이템 획득 (반짝)
+  item: () => {
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc1.type = 'sine';
+    osc2.type = 'sine';
+    osc1.frequency.setValueAtTime(600, audioCtx.currentTime);
+    osc2.frequency.setValueAtTime(900, audioCtx.currentTime);
+
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+
+    osc1.start(audioCtx.currentTime);
+    osc2.start(audioCtx.currentTime);
+    osc1.stop(audioCtx.currentTime + 0.2);
+    osc2.stop(audioCtx.currentTime + 0.2);
+  },
+
+  // 피해 입기 (낮은 톤)
+  hit: () => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.3);
+  },
+
+  // 스테이지 클리어 (팡파레)
+  clear: () => {
+    const notes = [523, 659, 784, 1047]; // C-E-G-C
+    notes.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+
+      const startTime = audioCtx.currentTime + i * 0.12;
+      gain.gain.setValueAtTime(0.15, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.4);
+    });
+  },
+
+  // 게임 오버 (하강 톤)
+  gameOver: () => {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.8);
+
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.8);
+  },
+
+  // 대시 (쉿!)
+  dash: () => {
+    const noise = audioCtx.createBufferSource();
+    const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.1, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < buffer.length; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    noise.buffer = buffer;
+
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.value = 2000;
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+    noise.start(audioCtx.currentTime);
+    noise.stop(audioCtx.currentTime + 0.1);
+  },
+};
+
+// 오디오 컨텍스트 활성화 (모바일 대응)
+document.addEventListener('click', () => {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}, { once: true });
+
+// ────────────────────────────────────────────────────────────
 //  캐릭터 정의
 // ────────────────────────────────────────────────────────────
 const CHAR_DEFS = {
@@ -825,13 +998,19 @@ class Game {
     const p = this.player;
     if (!p) return;
     if (p.onGround) {
+      // ★ 아래 키를 누르고 있으면 플랫폼 통과 모드 활성화
+      if (this.keys.down) {
+        p.fallThrough = 20; // 20프레임(약 0.33초) 동안 플랫폼 통과
+      }
       p.vy = this.charDef.jumpForce;
       p.onGround = false;
       p.onLadder = false;
       p.doubleJumpUsed = false;
+      SFX.jump(); // 🔊 점프 사운드
     } else if (this.charDef.doubleJump && !p.doubleJumpUsed) {
       p.vy = this.charDef.jumpForce * 0.85;
       p.doubleJumpUsed = true;
+      SFX.jump(); // 🔊 2단 점프 사운드
     }
   }
 
@@ -841,6 +1020,7 @@ class Game {
     p.dashTimer = 12;
     p.dashCooldown = 50;
     p.dashDir = p.facingLeft ? -1 : 1;
+    SFX.dash(); // 🔊 대시 사운드
   }
 
   // ── 스테이지 로드 ──────────────────────────────────────
@@ -900,6 +1080,7 @@ class Game {
       dashDir: 1,
       frame: 0,
       frameTimer: 0,
+      fallThrough: 0, // ★ 플랫폼 통과 타이머
     };
   }
 
@@ -940,6 +1121,9 @@ class Game {
 
     // 대시 쿨다운
     if (p.dashCooldown > 0) p.dashCooldown--;
+
+    // ★ 플랫폼 통과 타이머 감소
+    if (p.fallThrough > 0) p.fallThrough--;
 
     // 좌우 이동
     let moveX = 0;
@@ -1014,6 +1198,8 @@ class Game {
           if (p.onLadder && p.vy < 0) continue;
           // 아래로 이동 중 사다리 타고 내려가면 통과
           if (p.onLadder) continue;
+          // ★ 아래 키 + 점프로 플랫폼 통과 (바닥은 제외)
+          if (this.keys.down && p.fallThrough > 0 && pl.y !== this.platforms[0].y) continue;
           p.y = platTop - p.h;
           p.vy = 0;
           p.onGround = true;
@@ -1094,6 +1280,9 @@ class Game {
         // 콤보 팝업
         const popText = this.combo >= 2 ? `x${this.combo} COMBO! +${earned}` : `+${earned}`;
         this.comboPopups.push({ text: popText, x: f.x, y: f.y - 10, life: 60, combo: this.combo });
+        // 🔊 사운드
+        if (this.combo >= 2) SFX.combo();
+        else SFX.coin();
         // 미션: 과일 총 수집
         SAVE.set('totalFruits', SAVE.get('totalFruits', 0) + 1);
         if (this.combo >= 5)  SAVE.set('maxCombo5',  1);
@@ -1112,6 +1301,7 @@ class Game {
         if (it.type === 'magnet') { this.effectMagnet = 300; }
         if (it.type === 'speed')  { this.effectSpeed  = 240; }
         this.comboPopups.push({ text: it.type.toUpperCase() + '!', x: it.x, y: it.y - 10, life: 80, combo: 0 });
+        SFX.item(); // 🔊 아이템 획득 사운드
       }
     }
 
@@ -1146,6 +1336,7 @@ class Game {
       }
 
       this._draw();
+      SFX.clear(); // 🔊 스테이지 클리어 사운드
       const isLast = this.stageIdx + 1 >= STAGES.length;
       setTimeout(() => {
         const bonusLine = timeBonus > 0 ? `\nTIME BONUS +${timeBonus}` : '';
@@ -1267,11 +1458,13 @@ class Game {
     this.combo = 0;
     this.comboBroken = true;
     this.nodieThisStage = false;
+    SFX.hit(); // 🔊 피해 사운드
     if (this.lives <= 0) {
       this.running = false;
       cancelAnimationFrame(this.animId);
       this.gameOver = true;
       this._draw();
+      SFX.gameOver(); // 🔊 게임 오버 사운드
       setTimeout(() => {
         this._showOverlay('GAME OVER', `SCORE: ${this.score}`, 'RETRY', false);
       }, 300);
@@ -1284,6 +1477,7 @@ class Game {
       this.player.vy = 0;
       this.player.onGround = false;
       this.player.onLadder = false;
+      this.player.fallThrough = 0;
     }
   }
 
