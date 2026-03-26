@@ -186,15 +186,27 @@ const SPRITES = {
   raccoon_idle: new Image(),
   raccoon_walk: new Image(),
   raccoon_jump: new Image(),
+  fox_idle: new Image(),
+  fox_walk: new Image(),
+  fox_jump: new Image(),
+  rabbit_idle: new Image(),
+  rabbit_walk: new Image(),
+  rabbit_jump: new Image(),
 };
 
 SPRITES.raccoon_idle.src = 'sprites/raccoon_idle.png';
 SPRITES.raccoon_walk.src = 'sprites/raccoon_walk.png';
 SPRITES.raccoon_jump.src = 'sprites/raccoon_jump.png';
+SPRITES.fox_idle.src = 'sprites/fox_idle.png';
+SPRITES.fox_walk.src = 'sprites/fox_walk.png';
+SPRITES.fox_jump.src = 'sprites/fox_jump.png';
+SPRITES.rabbit_idle.src = 'sprites/rabbit_idle.png';
+SPRITES.rabbit_walk.src = 'sprites/rabbit_walk.png';
+SPRITES.rabbit_jump.src = 'sprites/rabbit_jump.png';
 
 // 이미지 로드 완료 대기
 let imagesLoaded = 0;
-const totalImages = 3;
+const totalImages = 9;
 Object.values(SPRITES).forEach(img => {
   img.onload = () => {
     imagesLoaded++;
@@ -573,95 +585,91 @@ function drawRaccoon(c, x, y, w, h, def, frame, facingLeft, isJumping, isMoving)
   c.restore();
 }
 
-function drawFox(c, x, y, w, h, def, frame, facingLeft) {
+function drawFox(c, x, y, w, h, def, frame, facingLeft, isJumping, isMoving) {
   c.save();
-  if (facingLeft) { c.translate(x + w, y); c.scale(-1, 1); x = 0; y = 0; }
-  else { c.translate(x, y); x = 0; y = 0; }
 
-  const bw = w, bh = h;
-  // 꼬리 (큰 여우꼬리)
-  c.fillStyle = def.tailColor;
-  c.fillRect(x+bw-4, y+bh*0.3, 10, bh*0.55);
-  c.fillStyle = '#fff';
-  c.fillRect(x+bw-2, y+bh*0.35, 6, bh*0.35);
-  // 몸
-  c.fillStyle = def.bodyColor;
-  c.fillRect(x+4, y+bh*0.35, bw-8, bh*0.5);
-  // 머리
-  c.fillStyle = def.bodyColor;
-  c.fillRect(x+4, y+4, bw-8, bh*0.38);
-  // 흰 얼굴
-  c.fillStyle = def.maskColor;
-  c.fillRect(x+8, y+10, bw-16, bh*0.22);
-  // 눈
-  c.fillStyle = '#000';
-  c.fillRect(x+10, y+12, 4, 4);
-  c.fillRect(x+bw-14, y+12, 4, 4);
-  c.fillStyle = '#ffff00';
-  c.fillRect(x+11, y+13, 2, 2);
-  c.fillRect(x+bw-13, y+13, 2, 2);
-  // 코
-  c.fillStyle = def.noseColor;
-  c.fillRect(x+bw/2-2, y+17, 4, 3);
-  // 뾰족 귀
-  c.fillStyle = def.earColor;
-  c.fillRect(x+5, y, 6, 10);
-  c.fillRect(x+bw-11, y, 6, 10);
-  c.fillStyle = '#ffaaaa';
-  c.fillRect(x+6, y+1, 4, 7);
-  c.fillRect(x+bw-10, y+1, 4, 7);
-  // 다리
-  c.fillStyle = def.bodyColor;
-  const legOff = frame % 2 === 0 ? 0 : 3;
-  c.fillRect(x+8, y+bh*0.82, 7, bh*0.18 + legOff);
-  c.fillRect(x+bw-15, y+bh*0.82, 7, bh*0.18 - legOff + 3);
+  // 이미지 선택
+  let sprite;
+  if (isJumping) {
+    sprite = SPRITES.fox_jump;
+  } else if (isMoving) {
+    sprite = SPRITES.fox_walk;
+  } else {
+    sprite = SPRITES.fox_idle;
+  }
+
+  // 이미지가 로드되지 않았으면 기본 도형으로 그리기
+  if (!sprite.complete || sprite.naturalWidth === 0) {
+    c.fillStyle = def.bodyColor;
+    c.fillRect(x, y, w, h);
+    c.restore();
+    return;
+  }
+
+  // 좌우 반전 처리
+  if (facingLeft) {
+    c.translate(x + w, y);
+    c.scale(-1, 1);
+    c.drawImage(sprite, 0, 0, w, h);
+  } else {
+    c.drawImage(sprite, x, y, w, h);
+  }
 
   c.restore();
 }
 
-function drawRabbit(c, x, y, w, h, def, frame, facingLeft, dashing) {
+function drawRabbit(c, x, y, w, h, def, frame, facingLeft, dashing, isJumping, isMoving) {
   c.save();
-  if (facingLeft) { c.translate(x + w, y); c.scale(-1, 1); x = 0; y = 0; }
-  else { c.translate(x, y); x = 0; y = 0; }
 
-  const bw = w, bh = h;
-  // 대시 이펙트
+  // 대시 잔상 효과 (대시 중일 때)
   if (dashing) {
-    c.fillStyle = 'rgba(200,200,255,0.3)';
-    c.fillRect(x-8, y+4, 8, bh-8);
-    c.fillRect(x-14, y+8, 6, bh-16);
+    const dashTrailCount = 3;
+    for (let i = 0; i < dashTrailCount; i++) {
+      const offsetX = facingLeft ? (i + 1) * 8 : -(i + 1) * 8;
+      const alpha = 0.15 - (i * 0.05);
+      c.globalAlpha = alpha;
+      const trailSprite = isJumping ? SPRITES.rabbit_jump : SPRITES.rabbit_walk;
+      if (trailSprite.complete) {
+        if (facingLeft) {
+          c.save();
+          c.translate(x + w + offsetX, y);
+          c.scale(-1, 1);
+          c.drawImage(trailSprite, 0, 0, w, h);
+          c.restore();
+        } else {
+          c.drawImage(trailSprite, x + offsetX, y, w, h);
+        }
+      }
+    }
+    c.globalAlpha = 1.0;
   }
-  // 꼬리
-  c.fillStyle = '#fff';
-  c.fillRect(x+bw-4, y+bh*0.45, 7, 7);
-  // 몸
-  c.fillStyle = def.bodyColor;
-  c.fillRect(x+4, y+bh*0.35, bw-8, bh*0.5);
-  // 머리
-  c.fillStyle = def.bodyColor;
-  c.fillRect(x+6, y+6, bw-12, bh*0.34);
-  // 눈
-  c.fillStyle = def.eyeColor;
-  c.fillRect(x+10, y+10, 5, 5);
-  c.fillRect(x+bw-15, y+10, 5, 5);
-  c.fillStyle = '#fff';
-  c.fillRect(x+11, y+11, 2, 2);
-  c.fillRect(x+bw-14, y+11, 2, 2);
-  // 코
-  c.fillStyle = def.noseColor;
-  c.fillRect(x+bw/2-2, y+16, 4, 3);
-  // 긴 귀
-  c.fillStyle = def.bodyColor;
-  c.fillRect(x+8, y-14, 6, 18);
-  c.fillRect(x+bw-14, y-14, 6, 18);
-  c.fillStyle = def.earColor;
-  c.fillRect(x+9, y-12, 4, 14);
-  c.fillRect(x+bw-13, y-12, 4, 14);
-  // 다리
-  c.fillStyle = def.bodyColor;
-  const legOff = frame % 2 === 0 ? 0 : 4;
-  c.fillRect(x+8, y+bh*0.82, 7, bh*0.18 + legOff);
-  c.fillRect(x+bw-15, y+bh*0.82, 7, bh*0.18 - legOff + 4);
+
+  // 이미지 선택
+  let sprite;
+  if (isJumping) {
+    sprite = SPRITES.rabbit_jump;
+  } else if (isMoving || dashing) {
+    sprite = SPRITES.rabbit_walk;
+  } else {
+    sprite = SPRITES.rabbit_idle;
+  }
+
+  // 이미지가 로드되지 않았으면 기본 도형으로 그리기
+  if (!sprite.complete || sprite.naturalWidth === 0) {
+    c.fillStyle = def.bodyColor;
+    c.fillRect(x, y, w, h);
+    c.restore();
+    return;
+  }
+
+  // 좌우 반전 처리
+  if (facingLeft) {
+    c.translate(x + w, y);
+    c.scale(-1, 1);
+    c.drawImage(sprite, 0, 0, w, h);
+  } else {
+    c.drawImage(sprite, x, y, w, h);
+  }
 
   c.restore();
 }
@@ -768,8 +776,8 @@ function drawSelectIcons() {
   const defs = [CHAR_DEFS.raccoon, CHAR_DEFS.fox, CHAR_DEFS.rabbit];
   const fns = [
     (c,x,y,w,h,d,f,fl) => drawRaccoon(c,x,y,w,h,d,f,fl,false,false), // 너구리: 서있기
-    drawFox,
-    (c,x,y,w,h,d,f,fl) => drawRabbit(c,x,y,w,h,d,f,fl,false)
+    (c,x,y,w,h,d,f,fl) => drawFox(c,x,y,w,h,d,f,fl,false,false), // 여우: 서있기
+    (c,x,y,w,h,d,f,fl) => drawRabbit(c,x,y,w,h,d,f,fl,false,false,false) // 토끼: 서있기
   ];
   for (let i = 0; i < 3; i++) {
     const ic = document.getElementById('icon' + i);
@@ -1656,14 +1664,15 @@ class Game {
     if (this.invincible > 0 && Math.floor(this.invincible / 6) % 2 === 0) {
       // 깜빡 - 건너뜀
     } else {
+      const isJumping = !p.onGround && !p.onLadder;
+      const isMoving = Math.abs(p.vx) > 0.1;
+
       if (this.charId === 'raccoon') {
-        const isJumping = !p.onGround && !p.onLadder;
-        const isMoving = Math.abs(p.vx) > 0.1;
         drawRaccoon(ctx, Math.round(p.x), Math.round(p.y), p.w, p.h, this.charDef, p.frame, p.facingLeft, isJumping, isMoving);
       } else if (this.charId === 'fox') {
-        drawFox(ctx, Math.round(p.x), Math.round(p.y), p.w, p.h, this.charDef, p.frame, p.facingLeft);
+        drawFox(ctx, Math.round(p.x), Math.round(p.y), p.w, p.h, this.charDef, p.frame, p.facingLeft, isJumping, isMoving);
       } else {
-        drawRabbit(ctx, Math.round(p.x), Math.round(p.y), p.w, p.h, this.charDef, p.frame, p.facingLeft, p.dashTimer > 0);
+        drawRabbit(ctx, Math.round(p.x), Math.round(p.y), p.w, p.h, this.charDef, p.frame, p.facingLeft, p.dashTimer > 0, isJumping, isMoving);
       }
     }
 
