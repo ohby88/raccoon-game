@@ -180,6 +180,32 @@ document.addEventListener('click', () => {
 }, { once: true });
 
 // ────────────────────────────────────────────────────────────
+//  스프라이트 이미지 로드
+// ────────────────────────────────────────────────────────────
+const SPRITES = {
+  raccoon_idle: new Image(),
+  raccoon_walk: new Image(),
+  raccoon_jump: new Image(),
+};
+
+SPRITES.raccoon_idle.src = 'sprites/raccoon_idle.jpg';
+SPRITES.raccoon_walk.src = 'sprites/raccoon_walk.jpg';
+SPRITES.raccoon_jump.src = 'sprites/raccoon_jump.jpg';
+
+// 이미지 로드 완료 대기
+let imagesLoaded = 0;
+const totalImages = 3;
+Object.values(SPRITES).forEach(img => {
+  img.onload = () => {
+    imagesLoaded++;
+    console.log(`이미지 로드: ${imagesLoaded}/${totalImages}`);
+  };
+  img.onerror = () => {
+    console.error('이미지 로드 실패:', img.src);
+  };
+});
+
+// ────────────────────────────────────────────────────────────
 //  캐릭터 정의
 // ────────────────────────────────────────────────────────────
 const CHAR_DEFS = {
@@ -514,46 +540,35 @@ const STAGES = buildStages();
 // ────────────────────────────────────────────────────────────
 //  픽셀 아트 캐릭터 드로우 함수들
 // ────────────────────────────────────────────────────────────
-function drawRaccoon(c, x, y, w, h, def, frame, facingLeft) {
+function drawRaccoon(c, x, y, w, h, def, frame, facingLeft, isJumping, isMoving) {
   c.save();
-  if (facingLeft) { c.translate(x + w, y); c.scale(-1, 1); x = 0; y = 0; }
-  else { c.translate(x, y); x = 0; y = 0; }
 
-  const bw = w, bh = h;
-  // 몸
-  c.fillStyle = def.bodyColor;
-  c.fillRect(x+4, y+bh*0.35, bw-8, bh*0.5);
-  // 꼬리
-  c.fillStyle = def.tailColor;
-  c.fillRect(x+bw-6, y+bh*0.4, 8, bh*0.35);
-  c.fillStyle = '#555';
-  c.fillRect(x+bw-4, y+bh*0.45, 4, bh*0.2);
-  // 머리
-  c.fillStyle = def.bodyColor;
-  c.fillRect(x+6, y+4, bw-12, bh*0.38);
-  // 마스크 (너구리 특유)
-  c.fillStyle = def.maskColor;
-  c.fillRect(x+8, y+8, bw*0.28, bh*0.2);
-  c.fillRect(x+bw-8-bw*0.28, y+8, bw*0.28, bh*0.2);
-  // 눈
-  c.fillStyle = def.eyeColor;
-  c.fillRect(x+10, y+10, 5, 5);
-  c.fillRect(x+bw-15, y+10, 5, 5);
-  c.fillStyle = '#000';
-  c.fillRect(x+11, y+11, 3, 3);
-  c.fillRect(x+bw-14, y+11, 3, 3);
-  // 코
-  c.fillStyle = def.noseColor;
-  c.fillRect(x+bw/2-2, y+16, 4, 3);
-  // 귀
-  c.fillStyle = def.earColor;
-  c.fillRect(x+6, y, 8, 8);
-  c.fillRect(x+bw-14, y, 8, 8);
-  // 다리 (애니)
-  c.fillStyle = def.bodyColor;
-  const legOff = frame % 2 === 0 ? 0 : 3;
-  c.fillRect(x+8, y+bh*0.82, 7, bh*0.18 + legOff);
-  c.fillRect(x+bw-15, y+bh*0.82, 7, bh*0.18 - legOff + 3);
+  // 이미지 선택: 점프 > 걷기 > 서있기
+  let sprite;
+  if (isJumping) {
+    sprite = SPRITES.raccoon_jump;
+  } else if (isMoving) {
+    sprite = SPRITES.raccoon_walk;
+  } else {
+    sprite = SPRITES.raccoon_idle;
+  }
+
+  // 이미지가 로드되지 않았으면 기본 도형으로 그리기
+  if (!sprite.complete || sprite.naturalWidth === 0) {
+    c.fillStyle = def.bodyColor;
+    c.fillRect(x, y, w, h);
+    c.restore();
+    return;
+  }
+
+  // 좌우 반전 처리
+  if (facingLeft) {
+    c.translate(x + w, y);
+    c.scale(-1, 1);
+    c.drawImage(sprite, 0, 0, w, h);
+  } else {
+    c.drawImage(sprite, x, y, w, h);
+  }
 
   c.restore();
 }
@@ -751,7 +766,11 @@ function drawFruit(c, x, y, type) {
 // ────────────────────────────────────────────────────────────
 function drawSelectIcons() {
   const defs = [CHAR_DEFS.raccoon, CHAR_DEFS.fox, CHAR_DEFS.rabbit];
-  const fns = [drawRaccoon, drawFox, (c,x,y,w,h,d,f,fl) => drawRabbit(c,x,y,w,h,d,f,fl,false)];
+  const fns = [
+    (c,x,y,w,h,d,f,fl) => drawRaccoon(c,x,y,w,h,d,f,fl,false,false), // 너구리: 서있기
+    drawFox,
+    (c,x,y,w,h,d,f,fl) => drawRabbit(c,x,y,w,h,d,f,fl,false)
+  ];
   for (let i = 0; i < 3; i++) {
     const ic = document.getElementById('icon' + i);
     const ictx = ic.getContext('2d');
@@ -759,7 +778,9 @@ function drawSelectIcons() {
     fns[i](ictx, 4, 8, 44, 36, defs[i], 0, false);
   }
 }
-drawSelectIcons();
+
+// 이미지가 로드된 후 아이콘 그리기
+setTimeout(() => drawSelectIcons(), 100);
 
 // ────────────────────────────────────────────────────────────
 //  저장 데이터 (localStorage)
@@ -1636,7 +1657,9 @@ class Game {
       // 깜빡 - 건너뜀
     } else {
       if (this.charId === 'raccoon') {
-        drawRaccoon(ctx, Math.round(p.x), Math.round(p.y), p.w, p.h, this.charDef, p.frame, p.facingLeft);
+        const isJumping = !p.onGround && !p.onLadder;
+        const isMoving = Math.abs(p.vx) > 0.1;
+        drawRaccoon(ctx, Math.round(p.x), Math.round(p.y), p.w, p.h, this.charDef, p.frame, p.facingLeft, isJumping, isMoving);
       } else if (this.charId === 'fox') {
         drawFox(ctx, Math.round(p.x), Math.round(p.y), p.w, p.h, this.charDef, p.frame, p.facingLeft);
       } else {
