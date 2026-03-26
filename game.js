@@ -188,9 +188,9 @@ const SPRITES = {
   raccoon_jump: new Image(),
 };
 
-SPRITES.raccoon_idle.src = 'sprites/raccoon_idle.jpg';
-SPRITES.raccoon_walk.src = 'sprites/raccoon_walk.jpg';
-SPRITES.raccoon_jump.src = 'sprites/raccoon_jump.jpg';
+SPRITES.raccoon_idle.src = 'sprites/raccoon_idle.png';
+SPRITES.raccoon_walk.src = 'sprites/raccoon_walk.png';
+SPRITES.raccoon_jump.src = 'sprites/raccoon_jump.png';
 
 // 이미지 로드 완료 대기
 let imagesLoaded = 0;
