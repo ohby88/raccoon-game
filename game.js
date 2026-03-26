@@ -1031,6 +1031,7 @@ class Game {
       // ★ 아래 키를 누르고 있으면 플랫폼 통과 모드 활성화
       if (this.keys.down) {
         p.fallThrough = 20; // 20프레임(약 0.33초) 동안 플랫폼 통과
+        console.log('🔽 플랫폼 통과 활성화! fallThrough:', p.fallThrough);
       }
       p.vy = this.charDef.jumpForce;
       p.onGround = false;
@@ -1233,7 +1234,10 @@ class Game {
           // 아래로 이동 중 사다리 타고 내려가면 통과
           if (p.onLadder) continue;
           // ★ 아래 키 + 점프로 플랫폼 통과 (바닥은 제외)
-          if (this.keys.down && p.fallThrough > 0 && pl.y !== this.platforms[0].y) continue;
+          if (this.keys.down && p.fallThrough > 0 && pl.y !== this.platforms[0].y) {
+            console.log('✅ 플랫폼 통과! y:', pl.y, 'fallThrough:', p.fallThrough);
+            continue;
+          }
           p.y = platTop - p.h;
           p.vy = 0;
           p.onGround = true;
