@@ -1236,31 +1236,36 @@ class Game {
       const handleJoystick = (e) => {
         e.preventDefault();
         const touch = e.targetTouches[0];
+        if (!touch) return;
+
         // 컨테이너 기준 상대 좌표 계산
         const x = touch.clientX - (rect.left + window.scrollX) - centerX;
         const y = touch.clientY - (rect.top + window.scrollY) - centerY;
-        
+
         const distance = Math.sqrt(x * x + y * y);
         const angle = Math.atan2(y, x);
-        
+
         // 노브 이동 제한 및 렌더링
         const moveDist = Math.min(distance, maxRadius);
         const knobX = Math.cos(angle) * moveDist;
         const knobY = Math.sin(angle) * moveDist;
         knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
-        
-        // 입력 키 초기화 및 매핑 (데드존 적용)
-        this.keys.left = false;
-        this.keys.right = false;
-        this.keys.up = false;
-        this.keys.down = false;
-        
-        if (distance > 8) { // 데드존: 8px 이상 움직였을 때만 입력
-          if (x > 12) this.keys.right = true;
-          if (x < -12) this.keys.left = true;
-          if (y > 12) this.keys.down = true;
-          if (y < -12) this.keys.up = true;
-        }
+
+        // 입력 키 매핑 (데드존 적용)
+        // 이전 값과 비교하여 필요할 때만 업데이트
+        const deadzone = 10; // 데드존 증가
+        const threshold = 15; // 입력 인식 임계값 증가
+
+        const newLeft = distance > deadzone && x < -threshold;
+        const newRight = distance > deadzone && x > threshold;
+        const newUp = distance > deadzone && y < -threshold;
+        const newDown = distance > deadzone && y > threshold;
+
+        // 값이 변경될 때만 업데이트
+        if (this.keys.left !== newLeft) this.keys.left = newLeft;
+        if (this.keys.right !== newRight) this.keys.right = newRight;
+        if (this.keys.up !== newUp) this.keys.up = newUp;
+        if (this.keys.down !== newDown) this.keys.down = newDown;
       };
 
       const resetJoystick = (e) => {
@@ -1305,15 +1310,15 @@ class Game {
     const p = this.player;
     if (!p) return;
     if (p.onGround) {
-      // ★ 아래 키를 누르고 있으면 플랫폼 통과 모드 활성화
-      // 단, 사다리가 근처에 있으면 플랫폼 통과 대신 사다리 우선
-      if (this.keys.down) {
+      // ★ 아래 키만 눌렸을 때(좌우 없이) 플랫폼 통과 시도
+      // 조이스틱 대각선 입력 시 점프를 막지 않도록 수정
+      if (this.keys.down && !this.keys.left && !this.keys.right) {
         const nearLadder = this._getNearLadder(p, false);
         if (!nearLadder) {
           p.fallThrough = 20; // 20프레임(약 0.33초) 동안 플랫폼 통과
         }
         // 사다리가 있으면 플랫폼 통과 하지 않음 (사다리 진입 대기)
-        return; // 아래 키 + 스페이스 = 사다리 내려가기이므로 점프 취소
+        return; // 순수 아래 키 + 점프 = 사다리 내려가기/플랫폼 통과
       }
       p.vy = this.charDef.jumpForce;
       p.onGround = false;
@@ -1473,8 +1478,8 @@ class Game {
 
         // 위로 올라가기: 사다리 범위 내에서 UP 키
         if (this.keys.up) {
-          // 플레이어가 사다리 하단 근처에 있으면 진입
-          if (playerBottom >= ladderTop - 30 && playerBottom <= ladderBottom + 30) {
+          // 플레이어가 사다리 근처에 있으면 진입 (범위 축소)
+          if (playerBottom >= ladderTop - 15 && playerBottom <= ladderBottom + 15) {
             p.onLadder = true;
             p.onGround = false;
             p.x = entryL.x + 1;
@@ -1484,9 +1489,8 @@ class Game {
         }
         // 아래로 내려가기: 사다리 범위 내에서 DOWN 키
         else if (this.keys.down) {
-          // 플레이어가 사다리 상단 근처에 있으면 진입 (더 관대하게)
-          // 플랫폼 위에 서있거나(playerBottom ≈ ladderTop) 약간 위에 있어도 OK
-          if (playerBottom >= ladderTop - 30 && playerTop <= ladderTop + 30) {
+          // 플레이어가 사다리 상단 근처에 있으면 진입 (범위 축소)
+          if (playerBottom >= ladderTop - 10 && playerTop <= ladderTop + 20) {
             p.onLadder = true;
             p.onGround = false;
             p.x = entryL.x + 1;
@@ -1755,25 +1759,34 @@ class Game {
   _getNearLadder(p, sticky) {
     const pL = p.x;
     const pR = p.x + p.w;
-    const pCY = p.y + p.h / 2;
-    const xPad = sticky ? 8 : 5;
-    const yTopPad = sticky ? 8 : 10;  // ★ 진입 시에도 10px 여유를 주어 플랫폼 위에서 감지 가능하게 함
-    const yBotPad = sticky ? 15 : 10; // 진입 시에도 10px 여유
+    const pCenterX = (pL + pR) / 2;
+
+    // X축: 실제로 겹쳐야 감지 (패딩 최소화)
+    const xPad = sticky ? 4 : 2;
+    // Y축: 진입/탑승 모두 좁은 범위로 통일
+    const yTopPad = sticky ? 8 : 12;
+    const yBotPad = sticky ? 8 : 12;
 
     let best = null;
     let bestDist = Infinity;
     for (const l of this.ladders) {
       const lL = l.x - xPad;
       const lR = l.x + 20 + xPad;
+      const lCenterX = l.x + 10;
+
+      // X축 AABB 충돌 체크
       if (pR > lL && pL < lR) {
         const lyTop = l.y - l.h - yTopPad;
         const lyBot = l.y + yBotPad;
+
+        // Y축 범위 체크
         if (p.y + p.h > lyTop && p.y < lyBot) {
-          const xDist = Math.abs((pL + pR) / 2 - (l.x + 10));
-          const lCY = l.y - l.h / 2;
-          const yDist = Math.abs(pCY - lCY);
-          const dist = xDist * 10 + yDist;
-          if (dist < bestDist) { bestDist = dist; best = l; }
+          // 플레이어 중심과 사다리 중심 거리로 우선순위 결정
+          const dist = Math.abs(pCenterX - lCenterX);
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = l;
+          }
         }
       }
     }
