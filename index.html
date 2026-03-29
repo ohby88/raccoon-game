@@ -280,21 +280,22 @@
       z-index: 5;
     }
     
-    .dpad {
-      position: absolute; left: 24px; top: 10px; width: 120px; height: 120px;
-      pointer-events: auto; background: #F2F4F6; border-radius: 50%;
+    /* 조이스틱 스타일 */
+    #joystick-container {
+      position: absolute; left: 32px; top: 10px; width: 120px; height: 120px;
+      background: #F2F4F6; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      touch-action: none; user-select: none; -webkit-user-select: none;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
     }
-    .dpad-btn {
-      position: absolute; width: 40px; height: 40px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; color: #4E5968; background: #E5E8EB; font-weight: 800;
-      user-select: none; -webkit-user-select: none; transition: background 0.1s;
+    #joystick-base {
+      width: 100px; height: 100px; border-radius: 50%; background: #E5E8EB;
+      display: flex; align-items: center; justify-content: center; position: relative;
     }
-    
-    #btnUp    { left: 40px; top: 0; }
-    #btnLeft  { left: 0;    top: 40px; }
-    #btnRight { left: 80px; top: 40px; }
-    #btnDown  { left: 40px; top: 80px; }
+    #joystick-knob {
+      width: 50px; height: 50px; border-radius: 50%; background: #FFFFFF;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); position: absolute; left: 25px; top: 25px;
+      transition: transform 0.05s ease-out; pointer-events: none;
+    }
 
     #btnJump {
       position: absolute; right: 24px; top: 30px; width: 80px; height: 80px;
@@ -389,18 +390,17 @@
   </div>
 
   <div id="controls">
-    <div class="dpad">
-      <div class="dpad-btn" id="btnUp">▲</div>
-      <div class="dpad-btn" id="btnLeft">◀</div>
-      <div class="dpad-btn" id="btnRight">▶</div>
-      <div class="dpad-btn" id="btnDown">▼</div>
+    <div id="joystick-container">
+      <div id="joystick-base">
+        <div id="joystick-knob"></div>
+      </div>
     </div>
     <div id="btnJump">JUMP</div>
   </div>
 </div>
 
-<script src="toss-api.js?v=24"></script>
-<script src="game.js?v=24"></script>
+<script src="toss-api.js?v=25"></script>
+<script src="game.js?v=25"></script>
 <script>
   if (typeof updateSelectScreen === 'function') updateSelectScreen();
 </script>

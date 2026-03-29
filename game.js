@@ -1224,24 +1224,67 @@ class Game {
   }
 
   _setupTouch() {
-    const bind = (id, key) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('touchstart', (e) => { e.preventDefault(); this.keys[key] = true; el.classList.add('btn-active'); }, { passive: false });
-      el.addEventListener('touchend', (e) => { e.preventDefault(); this.keys[key] = false; el.classList.remove('btn-active'); }, { passive: false });
-    };
-    bind('btnLeft', 'left');
-    bind('btnRight', 'right');
-    bind('btnUp', 'up');
-    bind('btnDown', 'down');
+    // 🕹️ 조이스틱 로직
+    const container = document.getElementById('joystick-container');
+    const knob = document.getElementById('joystick-knob');
+    if (container && knob) {
+      const rect = container.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const maxRadius = 35; // 노브가 움직일 최대 반경
 
+      const handleJoystick = (e) => {
+        e.preventDefault();
+        const touch = e.targetTouches[0];
+        // 컨테이너 기준 상대 좌표 계산
+        const x = touch.clientX - (rect.left + window.scrollX) - centerX;
+        const y = touch.clientY - (rect.top + window.scrollY) - centerY;
+        
+        const distance = Math.sqrt(x * x + y * y);
+        const angle = Math.atan2(y, x);
+        
+        // 노브 이동 제한 및 렌더링
+        const moveDist = Math.min(distance, maxRadius);
+        const knobX = Math.cos(angle) * moveDist;
+        const knobY = Math.sin(angle) * moveDist;
+        knob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+        
+        // 입력 키 초기화 및 매핑 (데드존 적용)
+        this.keys.left = false;
+        this.keys.right = false;
+        this.keys.up = false;
+        this.keys.down = false;
+        
+        if (distance > 8) { // 데드존: 8px 이상 움직였을 때만 입력
+          if (x > 12) this.keys.right = true;
+          if (x < -12) this.keys.left = true;
+          if (y > 12) this.keys.down = true;
+          if (y < -12) this.keys.up = true;
+        }
+      };
+
+      const resetJoystick = (e) => {
+        if (e) e.preventDefault();
+        knob.style.transform = 'translate(0px, 0px)';
+        this.keys.left = false;
+        this.keys.right = false;
+        this.keys.up = false;
+        this.keys.down = false;
+      };
+
+      container.addEventListener('touchstart', handleJoystick, { passive: false });
+      container.addEventListener('touchmove', handleJoystick, { passive: false });
+      container.addEventListener('touchend', resetJoystick, { passive: false });
+      container.addEventListener('touchcancel', resetJoystick, { passive: false });
+    }
+
+    // 🚀 점프 버튼 (기존 로직 유지)
     const jumpEl = document.getElementById('btnJump');
     if (jumpEl) {
       jumpEl.addEventListener('touchstart', (e) => {
         e.preventDefault();
         jumpEl.classList.add('btn-active');
         if (!this._jumpPressed) { this._doJump(); this._jumpPressed = true; }
-        // 대시
         if (this.charDef.dash) this._doDash();
       }, { passive: false });
       jumpEl.addEventListener('touchend', (e) => {
