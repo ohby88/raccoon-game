@@ -1,6 +1,20 @@
+
+// 새로운 페이지 닫기 전역 함수
+window.closePages = function () {
+  const s = document.getElementById('settingsPanel'); if (s) s.style.display = 'none';
+  document.getElementById('shopPanel').style.display = 'none';
+  document.getElementById('missionPanel').style.display = 'none';
+};
 // ============================================================
 //  RACCOON ADVENTURE - game.js
 // ============================================================
+
+window.onerror = function (msg, url, line, col, err) {
+  const errDiv = document.createElement('div');
+  errDiv.style.cssText = 'position:fixed;top:0;left:0;z-index:99999;background:red;color:white;padding:20px;font-size:20px;border:3px solid yellow;width:100%;word-wrap:break-word;';
+  errDiv.textContent = msg + " @ line " + line + ":" + col;
+  if (document.body) document.body.appendChild(errDiv);
+};
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -12,13 +26,21 @@ const W = 360, H = 640;
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
 
+const masterGain = audioCtx.createGain();
+masterGain.connect(audioCtx.destination);
+window.updateAudioVolume = function () {
+  masterGain.gain.value = (typeof SAVE !== 'undefined' && SAVE.get('opt_sfx', true)) ? 1 : 0;
+};
+setTimeout(window.updateAudioVolume, 100);
+
+
 const SFX = {
   // 점프 사운드 (짧은 상승 톤)
   jump: () => {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(masterGain);
 
     osc.type = 'square';
     osc.frequency.setValueAtTime(300, audioCtx.currentTime);
@@ -36,7 +58,7 @@ const SFX = {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(masterGain);
 
     osc.type = 'sine';
     osc.frequency.setValueAtTime(800, audioCtx.currentTime);
@@ -54,7 +76,7 @@ const SFX = {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(masterGain);
 
     osc.type = 'triangle';
     osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
@@ -74,7 +96,7 @@ const SFX = {
     const gain = audioCtx.createGain();
     osc1.connect(gain);
     osc2.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(masterGain);
 
     osc1.type = 'sine';
     osc2.type = 'sine';
@@ -95,7 +117,7 @@ const SFX = {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(masterGain);
 
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(200, audioCtx.currentTime);
@@ -115,7 +137,7 @@ const SFX = {
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      gain.connect(masterGain);
 
       osc.type = 'triangle';
       osc.frequency.value = freq;
@@ -134,7 +156,7 @@ const SFX = {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(masterGain);
 
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(400, audioCtx.currentTime);
@@ -164,7 +186,7 @@ const SFX = {
 
     noise.connect(filter);
     filter.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(masterGain);
 
     gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
@@ -182,6 +204,9 @@ document.addEventListener('click', () => {
 // ────────────────────────────────────────────────────────────
 //  스프라이트 이미지 로드
 // ────────────────────────────────────────────────────────────
+const BG_IMAGE = new Image();
+BG_IMAGE.src = 'sprites/sunny_meadow_bg.png';
+
 const SPRITES = {
   raccoon_idle: new Image(),
   raccoon_walk: new Image(),
@@ -194,15 +219,15 @@ const SPRITES = {
   rabbit_jump: new Image(),
 };
 
-SPRITES.raccoon_idle.src = 'sprites/raccoon_idle.png';
-SPRITES.raccoon_walk.src = 'sprites/raccoon_walk.png';
-SPRITES.raccoon_jump.src = 'sprites/raccoon_jump.png';
-SPRITES.fox_idle.src = 'sprites/fox_idle.png';
-SPRITES.fox_walk.src = 'sprites/fox_walk.png';
-SPRITES.fox_jump.src = 'sprites/fox_jump.png';
-SPRITES.rabbit_idle.src = 'sprites/rabbit_idle.png';
-SPRITES.rabbit_walk.src = 'sprites/rabbit_walk.png';
-SPRITES.rabbit_jump.src = 'sprites/rabbit_jump.png';
+SPRITES.raccoon_idle.src = 'sprites/raccoon_idle.png?v=3';
+SPRITES.raccoon_walk.src = 'sprites/raccoon_walk.png?v=3';
+SPRITES.raccoon_jump.src = 'sprites/raccoon_jump.png?v=3';
+SPRITES.fox_idle.src = 'sprites/fox_idle.png?v=3';
+SPRITES.fox_walk.src = 'sprites/fox_walk.png?v=3';
+SPRITES.fox_jump.src = 'sprites/fox_jump.png?v=3';
+SPRITES.rabbit_idle.src = 'sprites/rabbit_idle.png?v=3';
+SPRITES.rabbit_walk.src = 'sprites/rabbit_walk.png?v=3';
+SPRITES.rabbit_jump.src = 'sprites/rabbit_jump.png?v=3';
 
 // 이미지 로드 완료 대기
 let imagesLoaded = 0;
@@ -220,10 +245,97 @@ Object.values(SPRITES).forEach(img => {
 // ────────────────────────────────────────────────────────────
 //  캐릭터 정의
 // ────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────
+//  스킨 및 캐릭터 정의
+// ────────────────────────────────────────────────────────────
+const SKINS = {
+  raccoon: [
+    { id: 'basic', name: '기본 너구리', price: 0, filter: 'none' },
+    { id: 'dark', name: '다크 너구리', price: 200, filter: 'brightness(0.4) grayscale(1)' },
+    { id: 'gold', name: '황금 너구리', price: 1000, filter: 'sepia(1) saturate(2) hue-rotate(5deg) brightness(1.2)' }
+  ],
+  fox: [
+    { id: 'basic', name: '기본 여우', price: 0, filter: 'none' },
+    { id: 'snow', name: '눈꽃 여우', price: 300, filter: 'brightness(1.5) grayscale(1)' },
+    { id: 'shadow', name: '그림자 여우', price: 1200, filter: 'brightness(0.3) sepia(1) hue-rotate(240deg) saturate(1.5)' }
+  ],
+  rabbit: [
+    { id: 'basic', name: '기본 토끼', price: 0, filter: 'none' },
+    { id: 'pink', name: '벚꽃 토끼', price: 400, filter: 'hue-rotate(300deg) saturate(1.5) brightness(1.2)' },
+    { id: 'neon', name: '네온 토끼', price: 1500, filter: 'hue-rotate(180deg) saturate(3) brightness(1.5)' }
+  ]
+};
+
+
+function getSkinId(charId) {
+  if (typeof SAVE === 'undefined') return 'basic';
+  return SAVE.get('equippedSkin', {})[charId] || 'basic';
+}
+
+function drawAccessory(ctx, charId) {
+  const skinId = getSkinId(charId);
+  if (skinId === 'basic' || !skinId) return;
+
+  ctx.save();
+  ctx.translate(0, -22); // 머리 대략적 위치
+
+  if (skinId === 'dark') {
+    // 🕶️ 까만 썬글라스
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.roundRect(-12, -4, 24, 8, 3); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-8, -2, 4, 3);
+  } else if (skinId === 'gold') {
+    // 👑 왕관
+    ctx.fillStyle = '#F1C40F';
+    ctx.beginPath(); ctx.moveTo(-12, 2); ctx.lineTo(12, 2); ctx.lineTo(16, -15);
+    ctx.lineTo(6, -5); ctx.lineTo(0, -18); ctx.lineTo(-6, -5); ctx.lineTo(-16, -15); ctx.fill();
+  } else if (skinId === 'ghost') {
+    // 👼 천사 링
+    ctx.strokeStyle = '#F1C40F'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.ellipse(0, -20, 14, 4, 0, 0, Math.PI * 2); ctx.stroke();
+  } else if (skinId === 'ninja') {
+    // 🥷 붉은 머리띠
+    ctx.fillStyle = '#E74C3C';
+    ctx.fillRect(-14, -6, 28, 6);
+    ctx.fillRect(-22, -2, 10, 4);
+    ctx.fillRect(-18, 2, 8, 4);
+  } else if (skinId === 'arctic' || skinId === 'moon') {
+    // ❄️ 파란 귀마개 / 모자
+    ctx.fillStyle = '#3498DB';
+    ctx.beginPath(); ctx.arc(0, -5, 13, Math.PI, 0); ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath(); ctx.arc(-14, -5, 6, 0, Math.PI * 2); ctx.arc(14, -5, 6, 0, Math.PI * 2); ctx.fill();
+  } else if (skinId === 'flame') {
+    // 🔥 악마 뿔
+    ctx.fillStyle = '#E74C3C';
+    ctx.beginPath(); ctx.moveTo(-10, -2); ctx.lineTo(-16, -18); ctx.lineTo(-4, -5); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(4, -5); ctx.lineTo(16, -18); ctx.lineTo(10, -2); ctx.fill();
+  } else if (skinId === 'pink') {
+    // 🌸 벚꽃 핀
+    ctx.fillStyle = '#FD79A8';
+    ctx.translate(10, -10);
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      ctx.arc(Math.cos(i * Math.PI * 2 / 5) * 6, Math.sin(i * Math.PI * 2 / 5) * 6, 4, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    ctx.fillStyle = '#FFEAA7';
+    ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function getSkinFilter(charId) {
+  const eq = SAVE.get('equippedSkin', {})[charId] || 'basic';
+  const skin = SKINS[charId] ? SKINS[charId].find(s => s.id === eq) : null;
+  return skin ? skin.filter : 'none';
+}
+
 const CHAR_DEFS = {
   raccoon: {
-    speed: 1.6,
-    jumpForce: -8,
+    speed: 1.5,
+    jumpForce: -6,
     doubleJump: false,
     dash: false,
     color: '#aaaaaa',
@@ -235,8 +347,8 @@ const CHAR_DEFS = {
     maskColor: '#333333',
   },
   fox: {
-    speed: 1.2,
-    jumpForce: -10,
+    speed: 1.0,
+    jumpForce: -5,
     doubleJump: true,
     dash: false,
     color: '#ff8833',
@@ -248,8 +360,8 @@ const CHAR_DEFS = {
     maskColor: '#ffffff',
   },
   rabbit: {
-    speed: 2.4,
-    jumpForce: -6,
+    speed: 1.8,
+    jumpForce: -8,
     doubleJump: false,
     dash: true,
     color: '#ddddff',
@@ -276,172 +388,172 @@ function buildStages() {
     // Stage 1 - 튜토리얼
     // 사다리 y = 아랫층 플랫폼 y, y-h = 윗층 플랫폼 y
     {
-      platforms:[
-        {x:0,y:580,w:360},                        // 바닥
-        {x:0,y:460,w:360},                        // 1층 (전체)
-        {x:0,y:340,w:160},{x:220,y:340,w:140},    // 2층
-        {x:0,y:220,w:360},                        // 3층 (전체)
-        {x:80,y:100,w:200},                       // 4층
+      platforms: [
+        { x: 0, y: 580, w: 360 },                        // 바닥
+        { x: 0, y: 460, w: 360 },                        // 1층 (전체)
+        { x: 0, y: 340, w: 160 }, { x: 220, y: 340, w: 140 },    // 2층
+        { x: 0, y: 220, w: 360 },                        // 3층 (전체)
+        { x: 80, y: 100, w: 200 },                       // 4층
       ],
-      ladders:[
-        {x:80,y:580,h:120},   // 바닥(580)→1층(460)
-        {x:100,y:460,h:120},  // 1층(460)→2층(340) 왼쪽
-        {x:240,y:460,h:120},  // 1층(460)→2층(340) 오른쪽
-        {x:80,y:340,h:120},   // 2층(340)→3층(220)
-        {x:160,y:220,h:120},  // 3층(220)→4층(100)
+      ladders: [
+        { x: 80, y: 580, h: 120 },   // 바닥(580)→1층(460)
+        { x: 100, y: 460, h: 120 },  // 1층(460)→2층(340) 왼쪽
+        { x: 240, y: 460, h: 120 },  // 1층(460)→2층(340) 오른쪽
+        { x: 80, y: 340, h: 120 },   // 2층(340)→3층(220)
+        { x: 160, y: 220, h: 120 },  // 3층(220)→4층(100)
       ],
-      fruits:[
-        {x:100,y:450,t:0},{x:280,y:450,t:0},
-        {x:60,y:330,t:1},{x:260,y:330,t:0},
-        {x:80,y:210,t:0},{x:260,y:210,t:1},
-        {x:160,y:88,t:2},
+      fruits: [
+        { x: 100, y: 420, t: 0 }, { x: 280, y: 420, t: 0 },
+        { x: 60,  y: 300, t: 1 }, { x: 260, y: 300, t: 0 },
+        { x: 80,  y: 180, t: 0 }, { x: 260, y: 180, t: 1 },
+        { x: 160, y: 60,  t: 2 },
       ],
-      enemies:[
-        {x:50,y:450,type:'walk',range:160,speed:0.8},
-        {x:240,y:330,type:'walk',range:100,speed:0.9},
+      enemies: [
+        { x: 50, y: 450, type: 'walk', range: 160, speed: 0.8 },
+        { x: 240, y: 330, type: 'walk', range: 100, speed: 0.9 },
       ],
     },
     // Stage 2
     {
-      platforms:[
-        {x:0,y:580,w:360},
-        {x:0,y:470,w:360},
-        {x:0,y:360,w:160},{x:200,y:360,w:160},
-        {x:0,y:250,w:360},
-        {x:0,y:140,w:160},{x:200,y:140,w:160},
-        {x:80,y:30,w:200},
+      platforms: [
+        { x: 0, y: 580, w: 360 },
+        { x: 0, y: 470, w: 360 },
+        { x: 0, y: 360, w: 160 }, { x: 200, y: 360, w: 160 },
+        { x: 0, y: 250, w: 360 },
+        { x: 0, y: 140, w: 160 }, { x: 200, y: 140, w: 160 },
+        { x: 80, y: 30, w: 200 },
       ],
-      ladders:[
-        {x:100,y:580,h:110},  // 바닥(580)→1층(470)
-        {x:80,y:470,h:110},   // 1층(470)→2층(360) 왼쪽
-        {x:220,y:470,h:110},  // 1층(470)→2층(360) 오른쪽
-        {x:80,y:360,h:110},   // 2층(360)→3층(250)
-        {x:80,y:250,h:110},   // 3층(250)→4층(140) 왼쪽
-        {x:220,y:250,h:110},  // 3층(250)→4층(140) 오른쪽
-        {x:160,y:140,h:110},  // 4층(140)→5층(30)
+      ladders: [
+        { x: 100, y: 580, h: 110 },  // 바닥(580)→1층(470)
+        { x: 80, y: 470, h: 110 },   // 1층(470)→2층(360) 왼쪽
+        { x: 220, y: 470, h: 110 },  // 1층(470)→2층(360) 오른쪽
+        { x: 80, y: 360, h: 110 },   // 2층(360)→3층(250)
+        { x: 80, y: 250, h: 110 },   // 3층(250)→4층(140) 왼쪽
+        { x: 220, y: 250, h: 110 },  // 3층(250)→4층(140) 오른쪽
+        { x: 160, y: 140, h: 110 },  // 4층(140)→5층(30)
       ],
-      fruits:[
-        {x:80,y:460,t:0},{x:240,y:460,t:0},
-        {x:50,y:350,t:1},{x:240,y:350,t:0},
-        {x:80,y:240,t:1},{x:260,y:240,t:0},
-        {x:60,y:130,t:2},{x:240,y:130,t:1},{x:180,y:20,t:3},
+      fruits: [
+        { x: 80,  y: 430, t: 0 }, { x: 240, y: 430, t: 0 },
+        { x: 50,  y: 320, t: 1 }, { x: 240, y: 320, t: 0 },
+        { x: 80,  y: 210, t: 1 }, { x: 260, y: 210, t: 0 },
+        { x: 60,  y: 100, t: 2 }, { x: 240, y: 100, t: 1 }, { x: 180, y: 0, t: 3 },
       ],
-      enemies:[
-        {x:40,y:460,type:'walk',range:140,speed:0.9},
-        {x:220,y:350,type:'walk',range:120,speed:1.0},
-        {x:80,y:240,type:'walk',range:160,speed:1.0},
+      enemies: [
+        { x: 40, y: 460, type: 'walk', range: 140, speed: 0.9 },
+        { x: 220, y: 350, type: 'walk', range: 120, speed: 1.0 },
+        { x: 80, y: 240, type: 'walk', range: 160, speed: 1.0 },
       ],
     },
     // Stage 3
     {
-      platforms:[
-        {x:0,y:580,w:360},
-        {x:0,y:480,w:360},
-        {x:0,y:380,w:140},{x:180,y:380,w:180},
-        {x:0,y:280,w:360},
-        {x:0,y:180,w:160},{x:200,y:180,w:160},
-        {x:60,y:80,w:240},
+      platforms: [
+        { x: 0, y: 580, w: 360 },
+        { x: 0, y: 480, w: 360 },
+        { x: 0, y: 380, w: 140 }, { x: 180, y: 380, w: 180 },
+        { x: 0, y: 280, w: 360 },
+        { x: 0, y: 180, w: 160 }, { x: 200, y: 180, w: 160 },
+        { x: 60, y: 80, w: 240 },
       ],
-      ladders:[
-        {x:60,y:580,h:100},   // 바닥→1층
-        {x:60,y:480,h:100},   // 1층→2층 왼쪽
-        {x:200,y:480,h:100},  // 1층→2층 오른쪽
-        {x:80,y:380,h:100},   // 2층→3층
-        {x:80,y:280,h:100},   // 3층→4층 왼쪽
-        {x:220,y:280,h:100},  // 3층→4층 오른쪽
-        {x:100,y:180,h:100},  // 4층→5층
-        {x:160,y:80,h:100},   // 5층→최상층
+      ladders: [
+        { x: 60, y: 580, h: 100 },   // 바닥→1층
+        { x: 60, y: 480, h: 100 },   // 1층→2층 왼쪽
+        { x: 200, y: 480, h: 100 },  // 1층→2층 오른쪽
+        { x: 80, y: 380, h: 100 },   // 2층→3층
+        { x: 80, y: 280, h: 100 },   // 3층→4층 왼쪽
+        { x: 220, y: 280, h: 100 },  // 3층→4층 오른쪽
+        { x: 100, y: 180, h: 100 },  // 4층→5층
+        { x: 160, y: 80, h: 100 },   // 5층→최상층
       ],
-      fruits:[
-        {x:60,y:470,t:0},{x:240,y:470,t:1},
-        {x:60,y:370,t:0},{x:220,y:370,t:0},
-        {x:80,y:270,t:1},{x:240,y:270,t:2},
-        {x:60,y:170,t:1},{x:220,y:170,t:0},
-        {x:100,y:68,t:3},{x:220,y:68,t:2},
+      fruits: [
+        { x: 60,  y: 440, t: 0 }, { x: 240, y: 440, t: 1 },
+        { x: 60,  y: 340, t: 0 }, { x: 220, y: 340, t: 0 },
+        { x: 80,  y: 240, t: 1 }, { x: 240, y: 240, t: 2 },
+        { x: 60,  y: 140, t: 1 }, { x: 220, y: 140, t: 0 },
+        { x: 100, y: 40,  t: 3 }, { x: 220, y: 40,  t: 2 },
       ],
-      enemies:[
-        {x:20,y:470,type:'walk',range:120,speed:1.0},
-        {x:200,y:370,type:'walk',range:120,speed:1.1},
-        {x:80,y:270,type:'walk',range:160,speed:1.1},
+      enemies: [
+        { x: 20, y: 470, type: 'walk', range: 120, speed: 1.0 },
+        { x: 200, y: 370, type: 'walk', range: 120, speed: 1.1 },
+        { x: 80, y: 270, type: 'walk', range: 160, speed: 1.1 },
       ],
     },
     // Stage 4
     {
-      platforms:[
-        {x:0,y:580,w:360},
-        {x:0,y:490,w:100},{x:130,y:490,w:100},{x:260,y:490,w:100},
-        {x:0,y:400,w:360},
-        {x:0,y:310,w:160},{x:200,y:310,w:160},
-        {x:0,y:220,w:360},
-        {x:0,y:130,w:160},{x:200,y:130,w:160},
-        {x:80,y:40,w:200},
+      platforms: [
+        { x: 0, y: 580, w: 360 },
+        { x: 0, y: 490, w: 100 }, { x: 130, y: 490, w: 100 }, { x: 260, y: 490, w: 100 },
+        { x: 0, y: 400, w: 360 },
+        { x: 0, y: 310, w: 160 }, { x: 200, y: 310, w: 160 },
+        { x: 0, y: 220, w: 360 },
+        { x: 0, y: 130, w: 160 }, { x: 200, y: 130, w: 160 },
+        { x: 80, y: 40, w: 200 },
       ],
-      ladders:[
-        {x:60,y:580,h:90},   // 바닥(580)→1층(490)
-        {x:270,y:580,h:90},
-        {x:60,y:490,h:90},   // 1층(490)→2층(400)
-        {x:260,y:490,h:90},
-        {x:80,y:400,h:90},   // 2층(400)→3층(310)
-        {x:240,y:400,h:90},
-        {x:80,y:310,h:90},   // 3층(310)→4층(220)
-        {x:240,y:310,h:90},
-        {x:80,y:220,h:90},   // 4층(220)→5층(130)
-        {x:240,y:220,h:90},
-        {x:160,y:130,h:90},  // 5층(130)→최상층(40)
+      ladders: [
+        { x: 60, y: 580, h: 90 },   // 바닥(580)→1층(490)
+        { x: 270, y: 580, h: 90 },
+        { x: 60, y: 490, h: 90 },   // 1층(490)→2층(400)
+        { x: 260, y: 490, h: 90 },
+        { x: 80, y: 400, h: 90 },   // 2층(400)→3층(310)
+        { x: 240, y: 400, h: 90 },
+        { x: 80, y: 310, h: 90 },   // 3층(310)→4층(220)
+        { x: 240, y: 310, h: 90 },
+        { x: 80, y: 220, h: 90 },   // 4층(220)→5층(130)
+        { x: 240, y: 220, h: 90 },
+        { x: 160, y: 130, h: 90 },  // 5층(130)→최상층(40)
       ],
-      fruits:[
-        {x:30,y:480,t:0},{x:150,y:480,t:0},{x:270,y:480,t:0},
-        {x:100,y:390,t:1},{x:240,y:390,t:1},
-        {x:60,y:300,t:2},{x:240,y:300,t:2},
-        {x:80,y:210,t:1},{x:240,y:210,t:0},
-        {x:60,y:120,t:3},{x:240,y:120,t:3},{x:160,y:30,t:3},
+      fruits: [
+        { x: 30,  y: 450, t: 0 }, { x: 150, y: 450, t: 0 }, { x: 270, y: 450, t: 0 },
+        { x: 100, y: 360, t: 1 }, { x: 240, y: 360, t: 1 },
+        { x: 60,  y: 270, t: 2 }, { x: 240, y: 270, t: 2 },
+        { x: 80,  y: 180, t: 1 }, { x: 240, y: 180, t: 0 },
+        { x: 60,  y: 90,  t: 3 }, { x: 240, y: 90,  t: 3 }, { x: 160, y: 10, t: 3 },
       ],
-      enemies:[
-        {x:0,y:390,type:'walk',range:240,speed:1.1},
-        {x:20,y:300,type:'walk',range:140,speed:1.2},
-        {x:220,y:300,type:'walk',range:120,speed:1.2},
-        {x:0,y:120,type:'walk',range:140,speed:1.3},
-        {x:220,y:120,type:'walk',range:120,speed:1.3},
+      enemies: [
+        { x: 0, y: 390, type: 'walk', range: 240, speed: 1.1 },
+        { x: 20, y: 300, type: 'walk', range: 140, speed: 1.2 },
+        { x: 220, y: 300, type: 'walk', range: 120, speed: 1.2 },
+        { x: 0, y: 120, type: 'walk', range: 140, speed: 1.3 },
+        { x: 220, y: 120, type: 'walk', range: 120, speed: 1.3 },
       ],
     },
     // Stage 5 - bounce 등장
     {
-      platforms:[
-        {x:0,y:580,w:360},
-        {x:0,y:490,w:360},
-        {x:0,y:400,w:160},{x:200,y:400,w:160},
-        {x:0,y:310,w:360},
-        {x:0,y:220,w:160},{x:200,y:220,w:160},
-        {x:0,y:130,w:360},
-        {x:80,y:40,w:200},
+      platforms: [
+        { x: 0, y: 580, w: 360 },
+        { x: 0, y: 490, w: 360 },
+        { x: 0, y: 400, w: 160 }, { x: 200, y: 400, w: 160 },
+        { x: 0, y: 310, w: 360 },
+        { x: 0, y: 220, w: 160 }, { x: 200, y: 220, w: 160 },
+        { x: 0, y: 130, w: 360 },
+        { x: 80, y: 40, w: 200 },
       ],
-      ladders:[
-        {x:80,y:580,h:90},   // 바닥(580)→1층(490)
-        {x:80,y:490,h:90},   // 1층(490)→2층(400) 왼쪽
-        {x:240,y:490,h:90},  // 1층(490)→2층(400) 오른쪽
-        {x:80,y:400,h:90},   // 2층(400)→3층(310)
-        {x:240,y:400,h:90},
-        {x:80,y:310,h:90},   // 3층(310)→4층(220)
-        {x:240,y:310,h:90},
-        {x:80,y:220,h:90},   // 4층(220)→5층(130)
-        {x:240,y:220,h:90},
-        {x:160,y:130,h:90},  // 5층(130)→최상층(40)
-        {x:160,y:40,h:90},
+      ladders: [
+        { x: 80, y: 580, h: 90 },   // 바닥(580)→1층(490)
+        { x: 80, y: 490, h: 90 },   // 1층(490)→2층(400) 왼쪽
+        { x: 240, y: 490, h: 90 },  // 1층(490)→2층(400) 오른쪽
+        { x: 80, y: 400, h: 90 },   // 2층(400)→3층(310)
+        { x: 240, y: 400, h: 90 },
+        { x: 80, y: 310, h: 90 },   // 3층(310)→4층(220)
+        { x: 240, y: 310, h: 90 },
+        { x: 80, y: 220, h: 90 },   // 4층(220)→5층(130)
+        { x: 240, y: 220, h: 90 },
+        { x: 160, y: 130, h: 90 },  // 5층(130)→최상층(40)
+        { x: 160, y: 40, h: 90 },
       ],
-      fruits:[
-        {x:60,y:480,t:0},{x:240,y:480,t:1},
-        {x:60,y:390,t:0},{x:240,y:390,t:1},
-        {x:60,y:300,t:2},{x:220,y:300,t:0},
-        {x:60,y:210,t:2},{x:240,y:210,t:1},
-        {x:60,y:120,t:3},{x:240,y:120,t:3},{x:160,y:30,t:3},
+      fruits: [
+        { x: 60,  y: 450, t: 0 }, { x: 240, y: 450, t: 1 },
+        { x: 60,  y: 360, t: 0 }, { x: 240, y: 360, t: 1 },
+        { x: 60,  y: 270, t: 2 }, { x: 220, y: 270, t: 0 },
+        { x: 60,  y: 180, t: 2 }, { x: 240, y: 180, t: 1 },
+        { x: 60,  y: 90,  t: 3 }, { x: 240, y: 90,  t: 3 }, { x: 160, y: 10, t: 3 },
       ],
-      enemies:[
-        {x:20,y:480,type:'walk',range:140,speed:1.2},
-        {x:220,y:480,type:'walk',range:120,speed:1.2},
-        {x:60,y:390,type:'walk',range:100,speed:1.3},
-        {x:220,y:300,type:'bounce',range:80,speed:2.5},
-        {x:60,y:210,type:'walk',range:100,speed:1.4},
-        {x:220,y:120,type:'bounce',range:60,speed:2.5},
+      enemies: [
+        { x: 20, y: 480, type: 'walk', range: 140, speed: 1.2 },
+        { x: 220, y: 480, type: 'walk', range: 120, speed: 1.2 },
+        { x: 60, y: 390, type: 'walk', range: 100, speed: 1.3 },
+        { x: 220, y: 300, type: 'bounce', range: 80, speed: 2.5 },
+        { x: 60, y: 210, type: 'walk', range: 100, speed: 1.4 },
+        { x: 220, y: 120, type: 'bounce', range: 60, speed: 2.5 },
       ],
     },
     // Stage 6~20: 자동 생성 (난이도 점진 증가)
@@ -463,7 +575,7 @@ function buildStages() {
     const enemies = [];
 
     // 바닥
-    platforms.push({x:0, y:H-60, w:W});
+    platforms.push({ x: 0, y: H - 60, w: W });
 
     const rng = mulberry32(si * 1337);
 
@@ -478,20 +590,20 @@ function buildStages() {
       if (pieces === 1) {
         const gapStart = 60 + Math.floor(rng() * 60);
         const gapW = 40 + Math.floor(rng() * 50);
-        const seg1 = {x:0, w: gapStart};
-        const seg2 = {x: gapStart + gapW, w: W - gapStart - gapW};
-        platforms.push({x: seg1.x, y, w: seg1.w});
-        platforms.push({x: seg2.x, y, w: seg2.w});
+        const seg1 = { x: 0, w: gapStart };
+        const seg2 = { x: gapStart + gapW, w: W - gapStart - gapW };
+        platforms.push({ x: seg1.x, y, w: seg1.w });
+        platforms.push({ x: seg2.x, y, w: seg2.w });
         segs.push(seg1, seg2);
       } else {
-        platforms.push({x:0, y, w: W});
-        segs.push({x:0, w: W});
+        platforms.push({ x: 0, y, w: W });
+        segs.push({ x: 0, w: W });
       }
       floorSegs[f] = segs;
 
       // 사다리: 이 층 세그먼트 중 하나에서 x 선택 (플랫폼 위에 반드시 존재)
       // 아랫층(f-1)과 이 층 모두에 겹치는 x 구간에 사다리 배치
-      const prevSegs = f === 1 ? [{x:0, w:W}] : (floorSegs[f-1] || [{x:0, w:W}]);
+      const prevSegs = f === 1 ? [{ x: 0, w: W }] : (floorSegs[f - 1] || [{ x: 0, w: W }]);
       // 이 층 세그 중 하나 택
       const thisSeg = segs[Math.floor(rng() * segs.length)];
       // 아랫층 세그 중 thisSeg와 겹치는 것 찾기
@@ -505,14 +617,14 @@ function buildStages() {
       }
       // 사다리 y = 아랫층 플랫폼 y (= y + floorGap), h = 두 층 사이 간격
       const ladderBottomY = y + floorGap;
-      ladders.push({x: lx, y: ladderBottomY, h: floorGap});
+      ladders.push({ x: lx, y: ladderBottomY, h: floorGap });
 
       // 과일
       const numFruits = 2 + Math.floor(diff * 3);
       for (let fi = 0; fi < numFruits; fi++) {
         fruits.push({
           x: 20 + Math.floor(rng() * (W - 40)),
-          y: y - 10,
+          y: y - 50,
           t: Math.floor(rng() * 4),
         });
       }
@@ -531,7 +643,7 @@ function buildStages() {
       }
     }
 
-    S.push({platforms, ladders, fruits, enemies});
+    S.push({ platforms, ladders, fruits, enemies });
   }
 
   return S;
@@ -539,7 +651,7 @@ function buildStages() {
 
 // 간단한 시드 랜덤
 function mulberry32(a) {
-  return function() {
+  return function () {
     a |= 0; a = a + 0x6D2B79F5 | 0;
     let t = Math.imul(a ^ a >>> 15, 1 | a);
     t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
@@ -550,8 +662,54 @@ function mulberry32(a) {
 const STAGES = buildStages();
 
 // ────────────────────────────────────────────────────────────
+//  로컬스토리지 세이브 시스템
+// ────────────────────────────────────────────────────────────
+const SAVE = {
+  get(key, defaultVal) {
+    try {
+      const val = localStorage.getItem(key);
+      return val !== null ? JSON.parse(val) : defaultVal;
+    } catch (e) {
+      return defaultVal;
+    }
+  },
+  set(key, val) {
+    try {
+      localStorage.setItem(key, JSON.stringify(val));
+    } catch (e) {
+      console.error('Failed to save:', e);
+    }
+  }
+};
+
+// ────────────────────────────────────────────────────────────
 //  픽셀 아트 캐릭터 드로우 함수들
 // ────────────────────────────────────────────────────────────
+
+function getSkinFilter(charId) { return 'none'; }
+function drawAccessory(ctx, charId) {
+  const eq = (typeof SAVE !== 'undefined') ? (SAVE.get('equippedSkin', {})[charId] || 'basic') : 'basic';
+  if (eq === 'basic') return;
+
+  ctx.save();
+  if (charId === 'raccoon') {
+    if (eq === 'dark') { ctx.fillStyle = '#111'; ctx.fillRect(14, 18, 20, 6); ctx.fillStyle = '#fff'; ctx.fillRect(16, 20, 4, 3); }
+    else if (eq === 'gold') { ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.moveTo(10, 10); ctx.lineTo(14, 18); ctx.lineTo(24, 14); ctx.lineTo(34, 18); ctx.lineTo(38, 10); ctx.fill(); }
+    else if (eq === 'ghost') { ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(24, 4, 14, 4, 0, 0, Math.PI * 2); ctx.stroke(); }
+    else if (eq === 'ninja') { ctx.fillStyle = '#e74c3c'; ctx.fillRect(10, 16, 28, 6); }
+  } else if (charId === 'fox') {
+    if (eq === 'arctic') { ctx.fillStyle = '#3498db'; ctx.fillRect(12, 16, 24, 8); ctx.fillStyle = '#ecf0f1'; ctx.fillRect(12, 18, 24, 4); }
+    else if (eq === 'flame') { ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.moveTo(16, 14); ctx.lineTo(12, 4); ctx.lineTo(20, 14); ctx.fill(); ctx.beginPath(); ctx.moveTo(32, 14); ctx.lineTo(36, 4); ctx.lineTo(28, 14); ctx.fill(); }
+    else if (eq === 'ninja') { ctx.fillStyle = '#e74c3c'; ctx.fillRect(10, 18, 28, 6); }
+  } else if (charId === 'rabbit') {
+    if (eq === 'pink') { ctx.fillStyle = '#fd79a8'; ctx.beginPath(); ctx.arc(28, 12, 6, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(28, 12, 2, 0, Math.PI * 2); ctx.fill(); }
+    else if (eq === 'moon') { ctx.fillStyle = '#0984e3'; ctx.beginPath(); ctx.arc(12, 20, 6, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(36, 20, 6, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#0984e3'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(24, 20, 12, Math.PI, 0); ctx.stroke(); }
+    else if (eq === 'ninja') { ctx.fillStyle = '#e74c3c'; ctx.fillRect(12, 24, 24, 6); }
+  }
+  ctx.restore();
+}
+
+
 function drawRaccoon(c, x, y, w, h, def, frame, facingLeft, isJumping, isMoving) {
   c.save();
 
@@ -569,6 +727,7 @@ function drawRaccoon(c, x, y, w, h, def, frame, facingLeft, isJumping, isMoving)
   if (!sprite.complete || sprite.naturalWidth === 0) {
     c.fillStyle = def.bodyColor;
     c.fillRect(x, y, w, h);
+    drawAccessory(c, 'raccoon');
     c.restore();
     return;
   }
@@ -581,6 +740,9 @@ function drawRaccoon(c, x, y, w, h, def, frame, facingLeft, isJumping, isMoving)
   } else {
     c.drawImage(sprite, x, y, w, h);
   }
+  c.filter = 'none';
+  c.filter = 'none';
+  c.filter = 'none';
 
   c.restore();
 }
@@ -602,6 +764,7 @@ function drawFox(c, x, y, w, h, def, frame, facingLeft, isJumping, isMoving) {
   if (!sprite.complete || sprite.naturalWidth === 0) {
     c.fillStyle = def.bodyColor;
     c.fillRect(x, y, w, h);
+    drawAccessory(c, 'fox');
     c.restore();
     return;
   }
@@ -635,10 +798,12 @@ function drawRabbit(c, x, y, w, h, def, frame, facingLeft, dashing, isJumping, i
           c.translate(x + w + offsetX, y);
           c.scale(-1, 1);
           c.drawImage(trailSprite, 0, 0, w, h);
+          drawAccessory(c, 'rabbit');
           c.restore();
         } else {
           c.drawImage(trailSprite, x + offsetX, y, w, h);
         }
+        c.filter = 'none';
       }
     }
     c.globalAlpha = 1.0;
@@ -675,249 +840,317 @@ function drawRabbit(c, x, y, w, h, def, frame, facingLeft, dashing, isJumping, i
 }
 
 function drawEnemy(c, x, y, w, h, type, frame) {
-  if (type === 'bounce') {
-    // 빨간 해골형 적
-    c.fillStyle = '#cc0000';
-    c.fillRect(x+2, y+h*0.2, w-4, h*0.65);
-    c.fillStyle = '#ff4444';
-    c.fillRect(x+4, y+4, w-8, h*0.3);
-    c.fillStyle = '#fff';
-    c.fillRect(x+6, y+6, 5, 6);
-    c.fillRect(x+w-11, y+6, 5, 6);
-    c.fillStyle = '#000';
-    c.fillRect(x+7, y+7, 3, 4);
-    c.fillRect(x+w-10, y+7, 3, 4);
-    // 뿔
-    c.fillStyle = '#ff8800';
-    c.fillRect(x+6, y, 4, 6);
-    c.fillRect(x+w-10, y, 4, 6);
-    // 통통 다리
-    const bOff = frame % 2 === 0 ? 0 : 4;
-    c.fillStyle = '#aa0000';
-    c.fillRect(x+4, y+h*0.8, 8, 6 + bOff);
-    c.fillRect(x+w-12, y+h*0.8, 8, 10 - bOff);
-  } else {
-    // 초록 슬라임형 적
-    c.fillStyle = '#006600';
-    c.fillRect(x+2, y+h*0.3, w-4, h*0.6);
-    c.fillStyle = '#00aa00';
-    c.fillRect(x+4, y+6, w-8, h*0.38);
-    c.fillStyle = '#fff';
-    c.fillRect(x+7, y+10, 5, 5);
-    c.fillRect(x+w-12, y+10, 5, 5);
-    c.fillStyle = '#000';
-    c.fillRect(x+8, y+11, 3, 3);
-    c.fillRect(x+w-11, y+11, 3, 3);
-    // 성난 눈썹
-    c.fillStyle = '#000';
-    c.fillRect(x+6, y+8, 7, 2);
-    c.fillRect(x+w-13, y+8, 7, 2);
-    // 발
-    const wOff = frame % 2 === 0 ? 0 : 2;
-    c.fillStyle = '#005500';
-    c.fillRect(x+4, y+h*0.85, 8+wOff, 6);
-    c.fillRect(x+w-12-wOff, y+h*0.85, 8+wOff, 6);
-  }
+  c.save();
+  c.translate(x + w / 2, y + h / 2);
+
+  // 찌그러짐(Squash/Stretch) 점프/이동 애니메이션
+  const bounce = Math.abs(Math.sin(frame * 0.2));
+  c.scale(1 + bounce * 0.1, 1 - bounce * 0.1);
+  c.translate(0, -bounce * 4);
+
+  let emoji = '👾'; // 기본 슬라임
+  let size = 28;
+  if (type === 'bird') { emoji = '🦇'; size = 30; } // 박쥐
+  if (type === 'spike') { emoji = '🦔'; size = 30; } // 가시도치
+  if (type === 'boss') { emoji = '👹'; size = 50; } // 보스 오니
+
+  c.font = size + 'px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+
+  c.shadowColor = 'rgba(0,0,0,0.4)';
+  c.shadowOffsetY = 3;
+  c.shadowBlur = 5;
+
+  c.fillText(emoji, 0, 0);
+  c.restore();
 }
+
+
 
 function drawFruit(c, x, y, type) {
-  const cx = x + 10, cy = y + 10;
-  if (type === 0) {
-    // 체리
-    c.fillStyle = '#cc0022';
-    c.fillRect(cx-5, cy-3, 10, 10);
-    c.fillRect(cx-3, cy-5, 6, 4);
-    c.fillStyle = '#cc0022';
-    c.fillRect(cx+3, cy-7, 8, 8);
-    c.fillStyle = '#008800';
-    c.fillRect(cx-1, cy-10, 2, 8);
-    c.fillRect(cx+5, cy-12, 2, 6);
-    c.fillStyle = '#ff4455';
-    c.fillRect(cx-3, cy-4, 3, 3);
-    c.fillStyle = '#ff4455';
-    c.fillRect(cx+4, cy-6, 3, 3);
-  } else if (type === 1) {
-    // 오렌지
-    c.fillStyle = '#ff8800';
-    c.fillRect(cx-7, cy-7, 14, 14);
-    c.fillStyle = '#ffaa33';
-    c.fillRect(cx-5, cy-9, 10, 4);
-    c.fillStyle = '#ffbb55';
-    c.fillRect(cx-4, cy-5, 4, 4);
-    c.fillStyle = '#008800';
-    c.fillRect(cx-1, cy-11, 2, 5);
-  } else if (type === 2) {
-    // 멜론
-    c.fillStyle = '#55cc44';
-    c.fillRect(cx-8, cy-6, 16, 12);
-    c.fillStyle = '#44aa33';
-    c.fillRect(cx-6, cy-8, 12, 4);
-    c.fillStyle = '#88ee66';
-    c.fillRect(cx-5, cy-4, 5, 5);
-    c.fillStyle = '#333';
-    c.fillRect(cx-1, cy-2, 2, 2);
-    c.fillRect(cx+2, cy-2, 2, 2);
-    c.fillRect(cx-4, cy+1, 2, 2);
-  } else {
-    // 코인
-    c.fillStyle = '#ffdd00';
-    c.fillRect(cx-6, cy-6, 12, 12);
-    c.fillStyle = '#ffff66';
-    c.fillRect(cx-4, cy-4, 4, 4);
-    c.fillStyle = '#cc9900';
-    c.fillRect(cx-1, cy-2, 3, 5);
-  }
+  // 모든 과일 타입을 ⭐ 별 하나로 통일
+  c.save();
+  c.translate(x + 10, y + 10);
+
+  // 둥실둥실 떠다니는 효과
+  const t = Date.now() / 400 + x * 0.05;
+  const floatY = Math.sin(t) * 3;
+  const scale = 1 + Math.sin(t * 1.3) * 0.08; // 살짝 커졌다 작아졌다
+  c.translate(0, floatY);
+  c.scale(scale, scale);
+
+  // 황금빛 글로우
+  c.shadowColor = '#FFD700';
+  c.shadowBlur = 10;
+  c.font = '20px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillText('⭐', 0, 0);
+  c.restore();
 }
 
-// ────────────────────────────────────────────────────────────
-//  아이콘 미리보기 (선택 화면용)
-// ────────────────────────────────────────────────────────────
-function drawSelectIcons() {
-  const defs = [CHAR_DEFS.raccoon, CHAR_DEFS.fox, CHAR_DEFS.rabbit];
-  const fns = [
-    (c,x,y,w,h,d,f,fl) => drawRaccoon(c,x,y,w,h,d,f,fl,false,false), // 너구리: 서있기
-    (c,x,y,w,h,d,f,fl) => drawFox(c,x,y,w,h,d,f,fl,false,false), // 여우: 서있기
-    (c,x,y,w,h,d,f,fl) => drawRabbit(c,x,y,w,h,d,f,fl,false,false,false) // 토끼: 서있기
-  ];
-  for (let i = 0; i < 3; i++) {
-    const ic = document.getElementById('icon' + i);
-    const ictx = ic.getContext('2d');
-    ictx.clearRect(0,0,52,52);
-    fns[i](ictx, 4, 8, 44, 36, defs[i], 0, false);
-  }
+function drawStageItem(c, x, y, type, frameCount) {
+  let emoji = '⭐';
+  if (type === 'freeze') emoji = '⏱️';
+  else if (type === 'magnet') emoji = '🧲';
+  else if (type === 'speed') emoji = '⚡';
+
+  c.save();
+  c.translate(x + 10, y + 10);
+
+  const scale = 1 + Math.sin(frameCount * 0.1) * 0.15;
+  c.scale(scale, scale);
+
+  c.font = '24px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+
+  c.shadowColor = (type === 'star' || type === 'speed') ? 'rgba(255, 215, 0, 0.8)' : 'rgba(52, 152, 219, 0.8)';
+  c.shadowBlur = 10;
+  c.fillText(emoji, 0, 0);
+  c.restore();
 }
 
-// 이미지가 로드된 후 아이콘 그리기
-setTimeout(() => drawSelectIcons(), 100);
-
-// ────────────────────────────────────────────────────────────
-//  저장 데이터 (localStorage)
-// ────────────────────────────────────────────────────────────
-const SAVE = {
-  get: (k, def) => { try { const v = localStorage.getItem(k); return v !== null ? JSON.parse(v) : def; } catch { return def; } },
-  set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
-};
-
-// ────────────────────────────────────────────────────────────
-//  캐릭터 잠금 해제 시스템
-// ────────────────────────────────────────────────────────────
-const CHAR_UNLOCK = {
-  raccoon: { unlocked: true,  condition: null,               label: '' },
-  fox:     { unlocked: false, condition: s => s >= 3,        label: 'STAGE 3 CLEAR' },
-  rabbit:  { unlocked: false, condition: s => s >= 7,        label: 'STAGE 7 CLEAR' },
-};
-
-function getUnlocked() {
-  const clearedStage = SAVE.get('clearedStage', 0);
-  const result = {};
-  for (const [id, def] of Object.entries(CHAR_UNLOCK)) {
-    result[id] = def.unlocked || (def.condition && def.condition(clearedStage));
-  }
-  return result;
+function openMissions() {
+  const mission = document.getElementById('missionPanel');
+  if (!mission) return;
+  mission.style.display = 'flex';
+  mission.innerHTML = `
+    <div class="toss-app-bar">
+      <button class="btn-icon" onclick="closePages()">←</button>
+      <h2>미션 & 챌린지</h2>
+      <div style="width: 48px;"></div>
+    </div>
+    <div style="padding: 40px 24px; text-align: center;">
+      <div style="font-size: 40px; margin-bottom: 16px;">🚧</div>
+      <h3 style="font-size: 18px; color: var(--toss-text-primary); margin:0 0 8px 0;">미션 시스템 준비 중</h3>
+      <p style="font-size: 15px; color: var(--toss-text-secondary); word-break: keep-all; line-height: 1.5;">조금만 기다려주세요! 다채로운 도전과제와 보상이 곧 추가됩니다.</p>
+    </div>
+  `;
 }
+function openShop() {
+  const panel = document.getElementById('shopPanel');
+  if (!panel) return;
+  panel.style.display = 'flex';
 
-// ────────────────────────────────────────────────────────────
-//  미션 정의
-// ────────────────────────────────────────────────────────────
-const MISSIONS = [
-  { id:'fruit100',  label:'과일 100개 수집',      max:100,  key:'totalFruits',  reward:500  },
-  { id:'stage5',    label:'스테이지 5 클리어',     max:5,    key:'clearedStage', reward:1000 },
-  { id:'stage10',   label:'스테이지 10 클리어',    max:10,   key:'clearedStage', reward:3000 },
-  { id:'stage20',   label:'스테이지 20 클리어',    max:20,   key:'clearedStage', reward:9999 },
-  { id:'combo5',    label:'콤보 x5 달성',          max:1,    key:'maxCombo5',    reward:300  },
-  { id:'combo10',   label:'콤보 x10 달성',         max:1,    key:'maxCombo10',   reward:800  },
-  { id:'nodie',     label:'목숨 잃지 않고 클리어', max:1,    key:'nodieClears',  reward:500  },
-  { id:'play50',    label:'총 50번 플레이',         max:50,   key:'totalPlays',   reward:600  },
-];
+  panel.innerHTML = `
+  <div class="toss-app-bar">
+    <button class="btn-icon" onclick="closePages()">←</button>
+    <h2>스킨 상점</h2>
+    <div style="width: 48px;"></div> <!-- 중앙 정렬용 -->
+  </div>`;
 
-// ────────────────────────────────────────────────────────────
-//  데일리 챌린지 정의
-// ────────────────────────────────────────────────────────────
-const DAILY_TYPES = [
-  { id:'speedrun', label:'⚡ 제한시간 60초 안에 클리어!',   check: g => g.stageTimer <= 60 * 60 },
-  { id:'noitem',   label:'🚫 아이템 없이 클리어!',          check: g => g.itemsUsed === 0 },
-  { id:'fullcombo',label:'🔥 콤보 끊기지 않고 전부 수집!',  check: g => g.comboBroken === false },
-  { id:'lives4',   label:'❤ 목숨 4개 유지로 클리어!',       check: g => g.lives >= 4 },
-];
+  const content = document.createElement('div');
+  content.style.cssText = 'padding: 24px; padding-bottom: 80px;';
 
-function getTodayDaily() {
-  const today = new Date().toISOString().slice(0, 10);
-  const idx = today.split('-').reduce((a, v) => a + parseInt(v), 0) % DAILY_TYPES.length;
-  return { ...DAILY_TYPES[idx], date: today };
-}
+  const unlockedSt = getUnlocked();
+  const ownedSkins = SAVE.get('ownedSkins', {});
+  const maxPts = SAVE.get('points', 0);
+  const charNames = { raccoon: '너구리', fox: '사막 여우', rabbit: '토끼' };
 
-// ────────────────────────────────────────────────────────────
-//  전역 상태
-// ────────────────────────────────────────────────────────────
-let selectedChar = 'raccoon';
-let game = null;
-let showMissionPanel = false;
+  for (const cid of ['raccoon', 'fox', 'rabbit']) {
+    if (!unlockedSt[cid]) continue;
 
-function updateSelectScreen() {
-  const unlocked = getUnlocked();
-  document.querySelectorAll('.charCard').forEach(card => {
-    const cid = card.dataset.char;
-    const isLocked = !unlocked[cid];
-    card.classList.toggle('locked', isLocked);
-    let lockEl = card.querySelector('.lockBadge');
-    if (isLocked) {
-      if (!lockEl) {
-        lockEl = document.createElement('div');
-        lockEl.className = 'lockBadge';
-        card.appendChild(lockEl);
+    // 👕 각 캐릭터별 현재 장착된 스킨을 보여주는 라이브 프리뷰 캔버스 추가
+    content.innerHTML += `
+      <div style="display:flex; align-items:center; gap: 16px; margin-top:32px; margin-bottom:16px;">
+         <div style="width: 64px; height: 64px; background:#F2F4F6; border-radius: 16px; display:flex; justify-content:center; align-items:center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+            <canvas id="shopIcon_${cid}" width="48" height="48"></canvas>
+         </div>
+         <div style="font-size:18px;color:#191F28;font-weight:800;">${charNames[cid]}</div>
+      </div>`;
+
+    for (const skin of SKINS[cid]) {
+      const isOwned = skin.id === 'basic' || ownedSkins[`${cid}_${skin.id}`];
+      const isEq = (SAVE.get('equippedSkin', {})[cid] || 'basic') === skin.id;
+
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;background:#FFFFFF;border:1px solid #E5E8EB;padding:12px 16px;border-radius:12px;margin-bottom:8px;';
+
+      let btnHTML = '';
+      if (isEq) {
+        btnHTML = `<button disabled style="padding:8px 14px;font-size:12px;font-weight:700;background:#00C85A;color:#fff;border:none;border-radius:8px;">장착중</button>`;
+      } else if (isOwned) {
+        btnHTML = `<button onclick="equipSkin('${cid}','${skin.id}')" style="padding:8px 14px;font-size:12px;font-weight:700;background:#F2F4F6;color:#4E5968;border:none;border-radius:8px;cursor:pointer;">장착</button>`;
+      } else {
+        const canBuy = maxPts >= skin.price;
+        const btnStyle = canBuy ? 'background:#3182F6;color:#fff;cursor:pointer;' : 'background:#F2F4F6;color:#8B95A1;cursor:not-allowed;';
+        btnHTML = `<button ${canBuy ? `onclick="buySkin('${cid}','${skin.id}',${skin.price})"` : 'disabled'} style="padding:8px 14px;font-size:12px;font-weight:700;border:none;border-radius:8px;${btnStyle}">🪙 ${skin.price}</button>`;
       }
-      lockEl.textContent = '🔒 ' + CHAR_UNLOCK[cid].label;
-    } else if (lockEl) {
-      lockEl.remove();
+
+      row.innerHTML = `
+        <div style="font-size:14px;font-weight:700;color:#191F28;">${skin.name}</div>
+        ${btnHTML}
+      `;
+      content.appendChild(row);
+    }
+  }
+  content.innerHTML += `<div style="margin-top:20px;"><button onclick="watchAdForPoints()" style="width:100%;padding:16px;background:#E8F3FF;color:#1B64DA;border:none;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">📺 광고 보고 500 P 받기</button></div>`;
+  panel.appendChild(content);
+
+  // 상점 렌더링 직후 캔버스에 프리뷰 아이콘 그리기 예약
+  setTimeout(window.drawShopIcons, 10);
+}
+function buySkin(cid, sid, price) {
+  let pts = SAVE.get('points', 0);
+  if (pts >= price) {
+    SAVE.set('points', pts - price);
+    const owned = SAVE.get('ownedSkins', {});
+    owned[`${cid}_${sid}`] = true;
+    SAVE.set('ownedSkins', owned);
+    equipSkin(cid, sid);
+  }
+}
+
+function equipSkin(cid, sid) {
+  const eq = SAVE.get('equippedSkin', {});
+  eq[cid] = sid;
+  SAVE.set('equippedSkin', eq);
+  openShop();
+  drawSelectIcons();
+  updateSelectScreen();
+}
+
+
+window.updateSelectScreen = function () {
+  const pts = SAVE.get('points', 0);
+  const pointEl = document.getElementById('pointVal');
+  if (pointEl) pointEl.textContent = pts.toLocaleString();
+};
+
+window.drawSelectIcons = function () {
+  const chars = ['raccoon', 'fox', 'rabbit'];
+  const sprites = [SPRITES.raccoon_idle, SPRITES.fox_idle, SPRITES.rabbit_idle];
+  chars.forEach((cId, i) => {
+    const canvas = document.getElementById('icon' + i);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const sprite = sprites[i];
+    if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+      ctx.save();
+      const colorFilter = typeof getSkinFilter !== 'undefined' ? getSkinFilter(cId) : 'none';
+      if (colorFilter && colorFilter !== 'none') ctx.filter = colorFilter;
+      // Draw nicely centered
+      ctx.drawImage(sprite, 6, 6, w - 12, h - 12);
+      ctx.restore();
     }
   });
-  // 데일리 챌린지 표시
-  const daily = getTodayDaily();
-  const dailyDone = SAVE.get('dailyDate', '') === daily.date && SAVE.get('dailyDone', false);
-  const dailyEl = document.getElementById('dailyInfo');
-  if (dailyEl) {
-    dailyEl.textContent = (dailyDone ? '✅ ' : '📅 오늘의 챌린지: ') + daily.label;
-    dailyEl.style.color = dailyDone ? '#44ff88' : '#ffcc00';
+};
+
+Object.values(SPRITES).forEach(s => {
+  if (s.complete && s.naturalWidth > 0) {
+    setTimeout(window.drawSelectIcons, 10);
+  } else {
+    const old = s.onload;
+    s.onload = function () {
+      if (old) old.apply(this, arguments);
+      window.drawSelectIcons();
+    };
   }
-}
+});
 
-function selectChar(el, charId) {
-  const unlocked = getUnlocked();
-  if (!unlocked[charId]) return; // 잠긴 캐릭터 선택 불가
-  document.querySelectorAll('.charCard').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedChar = charId;
-}
+window.addEventListener('load', () => {
+  if (window.TossAPI) {
+    TossAPI.init().then(() => {
+      TossAPI.getUserInfo().then(info => {
+        const heading = document.querySelector('.title-section h1');
+        if (heading) heading.innerHTML = `${info.name}님 반가워요!<br>모험을 떠나볼까요?`;
+      });
+    });
+  }
+});
 
-function startGame(stageIdx = 0) {
-  document.getElementById('selectScreen').style.display = 'none';
-  document.getElementById('controls').style.display = 'block';
-  // 플레이 횟수 누적
-  SAVE.set('totalPlays', SAVE.get('totalPlays', 0) + 1);
-  game = new Game(selectedChar, stageIdx);
-  game.start();
-}
+window.watchAdForPoints = function () {
+  if (window.TossAPI) {
+    TossAPI.showRewardAd(() => {
+      const current = SAVE.get('points', 0);
+      SAVE.set('points', current + 500);
+      updateSelectScreen();
+      openShop(); // refresh
+      // alert
+      const msg = document.createElement('div');
+      msg.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);color:#fff;padding:12px 24px;border-radius:24px;z-index:9999;font-weight:600;font-size:14px;';
+      msg.textContent = '리워드 500 P가 지급되었습니다! 🎉';
+      document.body.appendChild(msg);
+      setTimeout(() => document.body.removeChild(msg), 2500);
+    });
+  }
+};
 
-function handleOverlayBtn() {
-  const overlay = document.getElementById('overlay');
-  overlay.style.display = 'none';
-  if (game) {
-    if (game.gameOver) {
-      game = new Game(selectedChar, game.stageIdx);
-      game.start();
-    } else {
-      game.nextStage();
+window.drawShopIcons = function () {
+  const chars = ['raccoon', 'fox', 'rabbit'];
+  const sprites = [SPRITES.raccoon_idle, SPRITES.fox_idle, SPRITES.rabbit_idle];
+  chars.forEach((cId, i) => {
+    const canvas = document.getElementById('shopIcon_' + cId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const sprite = sprites[i];
+    if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+      ctx.save();
+      const colorFilter = typeof getSkinFilter !== 'undefined' ? getSkinFilter(cId) : 'none';
+      if (colorFilter && colorFilter !== 'none') ctx.filter = colorFilter;
+      // 캐릭터를 캔버스 중앙에 조금 크게 그리기
+      ctx.drawImage(sprite, 0, 0, w, h);
+      ctx.restore();
     }
-  }
+  });
+};
+
+window.toggleSetting = function (key) {
+  const chk = document.getElementById('chk_' + key);
+  if (!chk) return;
+  const val = chk.checked;
+  SAVE.set(key, val);
+  if (key === 'opt_sfx') window.updateAudioVolume();
+  if (key === 'opt_vibrate' && val && navigator.vibrate) navigator.vibrate(50); // 짧은 피드백
 }
 
-// ────────────────────────────────────────────────────────────
-//  Game 클래스
-// ────────────────────────────────────────────────────────────
+function openSettings() {
+  const panel = document.getElementById('settingsPanel');
+  if (!panel) return;
+  panel.style.display = 'flex';
+
+  const bgm = SAVE.get('opt_bgm', true);
+  const sfx = SAVE.get('opt_sfx', true);
+  const vib = SAVE.get('opt_vibrate', true);
+
+  panel.innerHTML = `
+    <div class="toss-app-bar">
+      <button class="btn-icon" onclick="closePages()">←</button>
+      <h2>설정</h2>
+      <div style="width: 48px;"></div>
+    </div>
+    <div style="padding: 24px;">
+       <div style="display:flex; justify-content:space-between; align-items:center; padding: 16px 0; border-bottom: 1px solid #E5E8EB;">
+         <span style="font-weight:600; color:#191F28;">효과음</span>
+         <label class="toss-switch"><input type="checkbox" id="chk_opt_sfx" ${sfx ? 'checked' : ''} onchange="toggleSetting('opt_sfx')"><span class="slider"></span></label>
+       </div>
+       <div style="display:flex; justify-content:space-between; align-items:center; padding: 16px 0; border-bottom: 1px solid #E5E8EB;">
+         <span style="font-weight:600; color:#191F28;">진동</span>
+         <label class="toss-switch"><input type="checkbox" id="chk_opt_vibrate" ${vib ? 'checked' : ''} onchange="toggleSetting('opt_vibrate')"><span class="slider"></span></label>
+       </div>
+       <div style="margin-top:24px; padding:16px; background:#F9FAFB; border-radius:12px; font-size:13px; color:#4E5968;">
+         <p style="margin:0;">RACCOON ADVENTURE v1.0</p>
+         <p style="margin:8px 0 0 0;">Toss 미니게임 플랫폼</p>
+       </div>
+    </div>
+  `;
+}
+
 class Game {
   constructor(charId, stageIdx = 0) {
-    this.charId = charId;
-    this.charDef = CHAR_DEFS[charId];
+    this.c = document.getElementById('gameCanvas');
+    this.ctx = this.c.getContext('2d');
+    this.W = this.c.width;
+    this.H = this.c.height;
+
+    this.charId = charId || 'raccoon';
+    this.charDef = CHAR_DEFS[this.charId] || CHAR_DEFS['raccoon']; // ★ 항상 유효한 값 보장
     this.stageIdx = stageIdx;
     this.score = 0;
     this.topScore = SAVE.get('topScore', 0);
@@ -970,20 +1203,21 @@ class Game {
   // ── 입력 ──────────────────────────────────────────────
   _setupInput() {
     this._keydown = (e) => {
-      if (['ArrowLeft','a','A'].includes(e.key)) this.keys.left = true;
-      if (['ArrowRight','d','D'].includes(e.key)) this.keys.right = true;
-      if (['ArrowUp','w','W'].includes(e.key)) this.keys.up = true;
-      if (['ArrowDown','s','S'].includes(e.key)) this.keys.down = true;
-      if ([' ','ArrowUp','w','W'].includes(e.key)) {
+      if (['ArrowLeft', 'a', 'A'].includes(e.key)) this.keys.left = true;
+      if (['ArrowRight', 'd', 'D'].includes(e.key)) this.keys.right = true;
+      if (['ArrowUp', 'w', 'W'].includes(e.key)) this.keys.up = true;
+      if (['ArrowDown', 's', 'S'].includes(e.key)) this.keys.down = true;
+      // ★ 스페이스바만 점프로 사용 (ArrowUp/W는 사다리 전용)
+      if (e.key === ' ') {
         if (!this._jumpPressed) { this._doJump(); this._jumpPressed = true; }
       }
     };
     this._keyup = (e) => {
-      if (['ArrowLeft','a','A'].includes(e.key)) this.keys.left = false;
-      if (['ArrowRight','d','D'].includes(e.key)) this.keys.right = false;
-      if (['ArrowUp','w','W'].includes(e.key)) this.keys.up = false;
-      if (['ArrowDown','s','S'].includes(e.key)) this.keys.down = false;
-      if ([' ','ArrowUp','w','W'].includes(e.key)) this._jumpPressed = false;
+      if (['ArrowLeft', 'a', 'A'].includes(e.key)) this.keys.left = false;
+      if (['ArrowRight', 'd', 'D'].includes(e.key)) this.keys.right = false;
+      if (['ArrowUp', 'w', 'W'].includes(e.key)) this.keys.up = false;
+      if (['ArrowDown', 's', 'S'].includes(e.key)) this.keys.down = false;
+      if (e.key === ' ') this._jumpPressed = false;
     };
     window.addEventListener('keydown', this._keydown);
     window.addEventListener('keyup', this._keyup);
@@ -993,8 +1227,8 @@ class Game {
     const bind = (id, key) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.addEventListener('touchstart', (e) => { e.preventDefault(); this.keys[key] = true; el.classList.add('btn-active'); }, {passive:false});
-      el.addEventListener('touchend',   (e) => { e.preventDefault(); this.keys[key] = false; el.classList.remove('btn-active'); }, {passive:false});
+      el.addEventListener('touchstart', (e) => { e.preventDefault(); this.keys[key] = true; el.classList.add('btn-active'); }, { passive: false });
+      el.addEventListener('touchend', (e) => { e.preventDefault(); this.keys[key] = false; el.classList.remove('btn-active'); }, { passive: false });
     };
     bind('btnLeft', 'left');
     bind('btnRight', 'right');
@@ -1009,12 +1243,12 @@ class Game {
         if (!this._jumpPressed) { this._doJump(); this._jumpPressed = true; }
         // 대시
         if (this.charDef.dash) this._doDash();
-      }, {passive:false});
+      }, { passive: false });
       jumpEl.addEventListener('touchend', (e) => {
         e.preventDefault();
         jumpEl.classList.remove('btn-active');
         this._jumpPressed = false;
-      }, {passive:false});
+      }, { passive: false });
     }
   }
 
@@ -1031,7 +1265,7 @@ class Game {
       // ★ 아래 키를 누르고 있으면 플랫폼 통과 모드 활성화
       if (this.keys.down) {
         p.fallThrough = 20; // 20프레임(약 0.33초) 동안 플랫폼 통과
-        console.log('🔽 플랫폼 통과 활성화! fallThrough:', p.fallThrough);
+  
       }
       p.vy = this.charDef.jumpForce;
       p.onGround = false;
@@ -1098,6 +1332,7 @@ class Game {
     });
 
     this.player = {
+      fallThrough: 0,
       x: spawnX,
       y: firstPlat.y - 32,
       w: 26, h: 28,
@@ -1119,7 +1354,7 @@ class Game {
     this.stageIdx++;
     if (this.stageIdx >= STAGES.length) {
       // 게임 클리어
-      this._showOverlay('CLEAR!!', `ALL ${STAGES.length} STAGES COMPLETE!`, 'MENU', true);
+      this._showOverlay('CLEAR!!', 'ALL ' + STAGES.length + ' STAGES COMPLETE!', 'MENU', true);
       return;
     }
     this._loadStage();
@@ -1140,8 +1375,12 @@ class Game {
     this.animId = requestAnimationFrame(() => this._loop());
   }
 
-  // ── 업데이트 ──────────────────────────────────────────
   _update() {
+    const ctx = this.ctx;
+    const W = this.W;
+    const H = this.H;
+
+    if (this.hitStop > 0) { this.hitStop--; return; }
     this.frameCount++;
     if (this.invincible > 0) this.invincible--;
 
@@ -1152,14 +1391,14 @@ class Game {
 
     // 대시 쿨다운
     if (p.dashCooldown > 0) p.dashCooldown--;
-
-    // ★ 플랫폼 통과 타이머 감소
     if (p.fallThrough > 0) p.fallThrough--;
+
+    // ★ 플랫폼 통과 타이머 감소 (이미 위에서 감소했으므로 중복 제거)
 
     // 좌우 이동
     let moveX = 0;
-    if (this.keys.left)  { moveX = -def.speed; p.facingLeft = true; }
-    if (this.keys.right) { moveX =  def.speed;  p.facingLeft = false; }
+    if (this.keys.left) { moveX = -def.speed; p.facingLeft = true; }
+    if (this.keys.right) { moveX = def.speed; p.facingLeft = false; }
 
     // 대시 오버라이드
     if (p.dashTimer > 0) {
@@ -1171,38 +1410,68 @@ class Game {
       }
     }
 
-    // 사다리 체크
-    const nearLadder = this._checkLadder(p);
+    // ══════════════════════════════════════════════════
+    //  사다리 로직
+    // ══════════════════════════════════════════════════
 
-    // 사다리 진입: 위/아래 키를 누르면서 사다리 근처에 있을 때
-    if (nearLadder && !p.onLadder) {
-      if (this.keys.up || this.keys.down) {
-        p.onLadder = true;
-        // 사다리 x 중앙으로 스냅
-        const l = this._getLadder(p);
-        if (l) p.x = l.x + 1;
+    // STEP 1: 사다리 진입 시도 (아직 안 탑승 중일 때만)
+    if (!p.onLadder) {
+      const entryL = this._getNearLadder(p, false);
+      if (entryL) {
+        const ladderTop = entryL.y - entryL.h; // 사다리 위쪽
+        const ladderBottom = entryL.y;             // 사다리 아래쪽
+        const playerBottom = p.y + p.h;
+        const playerTop = p.y;
+
+        // ★ 아래에서 UP: 플레이어 바닥이 사다리 아래쪽 바로 근처에 있어야
+        const nearBottom = playerBottom >= ladderBottom - 8 && playerBottom <= ladderBottom + 24;
+        // ★ 위에서 DOWN: 플레이어 발이 사다리 위쪽(꼭대기 플랫폼) 근처에 있어야
+        //   플랫폼 위에 서있으면 playerBottom ≈ ladderTop 이므로 playerBottom 기준으로 비교
+        const nearTop = playerBottom >= ladderTop - 8 && playerBottom <= ladderTop + 24;
+
+        if (this.keys.up && nearBottom) {
+          p.onLadder = true;
+          p.onGround = false;
+          p.x = entryL.x + 1;
+          p.vx = 0;
+          p.vy = 0;
+        } else if (this.keys.down && nearTop) {
+          p.onLadder = true;
+          p.onGround = false;
+          p.x = entryL.x + 1;
+          p.vx = 0;
+          p.vy = 0;
+        }
       }
     }
 
+    // STEP 2: 탑승 중 처리 (STEP 1 이후 p.onLadder 값으로 계산)
     if (p.onLadder) {
-      if (!nearLadder) {
-        // 사다리 범위 벗어남 → 자동 해제
+      const activeL = this._getNearLadder(p, true);
+
+      // 좌우 방향키 또는 점프키로 사다리 이탈
+      if (this._jumpPressed || this.keys.left || this.keys.right) {
         p.onLadder = false;
+        p.ladderGrace = 0;
+        if (this.keys.left) p.vx = -this.charDef.speed * 1.5;
+        if (this.keys.right) p.vx = this.charDef.speed * 1.5;
+      } else if (!activeL) {
+        // 모든 사다리에서 완전히 벗어남 → 이탈
+        p.onLadder = false;
+        p.ladderGrace = 0;
       } else {
-        if (this.keys.up)        { p.vy = -2.5; }
-        else if (this.keys.down) { p.vy =  2.5; }
-        else                     { p.vy =  0;   }
+        p.ladderGrace = 0;
+        // 쬈 방향부터 자연스럽게 이동 (경계 이탈 로직 제거)
+        if (this.keys.up) { p.vy = -3.2; }
+        else if (this.keys.down) { p.vy = 3.2; }
+        else { p.vy = 0; } // 키 없으면 정지
         p.vx = 0;
         moveX = 0;
+        p.onGround = false;
       }
     }
 
-    // 점프 키로 사다리 이탈
-    if (p.onLadder && this._jumpPressed) {
-      p.onLadder = false;
-    }
-
-    // 중력 (사다리 위에선 적용 안 함)
+    // ── 중력 (사다리 위에선 적용 안 함) ──
     if (!p.onLadder) {
       p.vy += GRAVITY;
       p.vy = Math.min(p.vy, 14);
@@ -1222,26 +1491,20 @@ class Game {
       return;
     }
 
-    // 플랫폼 충돌 (사다리 타는 중엔 통과)
+    // ── 플랫폼 충돌 ──
     p.onGround = false;
     for (const pl of this.platforms) {
       if (p.x + p.w > pl.x && p.x < pl.x + pl.w) {
         const prevBottom = p.y + p.h - p.vy;
         const platTop = pl.y;
         if (p.vy >= 0 && prevBottom <= platTop + 4 && p.y + p.h >= platTop) {
-          // 사다리 타는 중이면 위쪽 플랫폼은 통과
-          if (p.onLadder && p.vy < 0) continue;
-          // 아래로 이동 중 사다리 타고 내려가면 통과
+          // 사다리 타는 중엔 모든 플랫폼 통과
           if (p.onLadder) continue;
-          // ★ 아래 키 + 점프로 플랫폼 통과 (바닥은 제외)
-          if (this.keys.down && p.fallThrough > 0 && pl.y !== this.platforms[0].y) {
-            console.log('✅ 플랫폼 통과! y:', pl.y, 'fallThrough:', p.fallThrough);
-            continue;
-          }
+          // 아래 키 + fallThrough 중엔 통과 (바닥 제외)
+          if (this.keys.down && p.fallThrough > 0 && pl !== this.platforms[0]) continue;
           p.y = platTop - p.h;
           p.vy = 0;
           p.onGround = true;
-          p.onLadder = false;
           p.doubleJumpUsed = false;
         }
         // 천장 충돌 (사다리 중엔 무시)
@@ -1273,9 +1536,9 @@ class Game {
 
     // ── 아이템 효과 틱 ──
     if (this.effectInvincible > 0) this.effectInvincible--;
-    if (this.effectFreeze    > 0) this.effectFreeze--;
-    if (this.effectMagnet    > 0) this.effectMagnet--;
-    if (this.effectSpeed     > 0) this.effectSpeed--;
+    if (this.effectFreeze > 0) this.effectFreeze--;
+    if (this.effectMagnet > 0) this.effectMagnet--;
+    if (this.effectSpeed > 0) this.effectSpeed--;
 
     // ── 팝업 틱 ──
     this.comboPopups = this.comboPopups.filter(cp => {
@@ -1299,7 +1562,7 @@ class Game {
         if (f.collected) continue;
         const dx = (f.x + 10) - (p.x + p.w / 2);
         const dy = (f.y + 10) - (p.y + p.h / 2);
-        if (Math.sqrt(dx*dx + dy*dy) < 80) {
+        if (Math.sqrt(dx * dx + dy * dy) < 80) {
           f.x -= dx * 0.12;
           f.y -= dy * 0.12;
         }
@@ -1310,8 +1573,8 @@ class Game {
     for (const f of this.fruits) {
       if (f.collected) continue;
       const collectBox = this.effectMagnet > 0
-        ? {x: f.x - 10, y: f.y - 10, w: 40, h: 40}
-        : {x: f.x, y: f.y, w: 20, h: 20};
+        ? { x: f.x - 10, y: f.y - 10, w: 40, h: 40 }
+        : { x: f.x, y: f.y, w: 20, h: 20 };
       if (this._rect(p, collectBox)) {
         f.collected = true;
         const pts = [100, 150, 200, 500];
@@ -1335,7 +1598,7 @@ class Game {
         this._spawnParticles(f.x + 10, f.y + 10, this.combo >= 2 ? '#ffff00' : '#00ffff', 8);
         // 미션: 과일 총 수집
         SAVE.set('totalFruits', SAVE.get('totalFruits', 0) + 1);
-        if (this.combo >= 5)  SAVE.set('maxCombo5',  1);
+        if (this.combo >= 5) SAVE.set('maxCombo5', 1);
         if (this.combo >= 10) SAVE.set('maxCombo10', 1);
       }
     }
@@ -1343,13 +1606,13 @@ class Game {
     // ── 스테이지 아이템 수집 ──
     for (const it of this.items) {
       if (it.collected) continue;
-      if (this._rect(p, {x: it.x, y: it.y, w: 22, h: 22})) {
+      if (this._rect(p, { x: it.x, y: it.y, w: 22, h: 22 })) {
         it.collected = true;
         this.itemsUsed++;
-        if (it.type === 'star')   { this.effectInvincible = 300; this.invincible = 300; }
+        if (it.type === 'star') { this.effectInvincible = 300; this.invincible = 300; }
         if (it.type === 'freeze') { this.effectFreeze = 240; }
         if (it.type === 'magnet') { this.effectMagnet = 300; }
-        if (it.type === 'speed')  { this.effectSpeed  = 240; }
+        if (it.type === 'speed') { this.effectSpeed = 240; }
         this.comboPopups.push({ text: it.type.toUpperCase() + '!', x: it.x, y: it.y - 10, life: 80, combo: 0 });
         SFX.item(); // 🔊 아이템 획득 사운드
         // ✨ 아이템 파티클 (더 화려하게)
@@ -1360,6 +1623,7 @@ class Game {
     // ── 스테이지 클리어 체크 ──
     const remaining = this.fruits.filter(f => !f.collected).length;
     if (remaining === 0) {
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
       this.running = false;
       cancelAnimationFrame(this.animId);
 
@@ -1423,25 +1687,50 @@ class Game {
   }
 
   _checkLadder(p) {
-    return this._getLadder(p) !== null;
+    return this._getNearLadder(p, false) !== null;
   }
 
-  _getLadder(p) {
-    const px = p.x + p.w / 2;
+  // 레거시 호환
+  _getLadder(p, sticky = false) {
+    return this._getNearLadder(p, sticky);
+  }
+
+  /**
+   * 가장 가까운 사다리를 반환 (AABB 격리 기반)
+   * @param {Object} p - 플레이어
+   * @param {boolean} sticky - true: 탑승 중 (너그러운 범위), false: 진입 탐지
+   */
+  _getNearLadder(p, sticky) {
+    const pL = p.x;
+    const pR = p.x + p.w;
+    const pCY = p.y + p.h / 2;
+    const xPad = sticky ? 8 : 5;
+    const yTopPad = sticky ? 8 : 0;  // ★ sticky: 8px만 (이전 15px에서 축소) -- 마궁 빠져나도 레이더 끝에서 온도 알아
+    const yBotPad = sticky ? 15 : 0; // 진입: AABB 전체 포지 없음, 위치 체크는 진입 조건에서
+
+    let best = null;
+    let bestDist = Infinity;
     for (const l of this.ladders) {
-      // 사다리 x 범위 안에 플레이어 중심이 있는지
-      if (px >= l.x && px <= l.x + 20) {
-        // 사다리 세로 범위: (l.y - l.h) ~ l.y
-        // 플레이어가 조금이라도 겹치면 감지 (여유 16px)
-        if (p.y + p.h > l.y - l.h - 4 && p.y < l.y + 16) return l;
+      const lL = l.x - xPad;
+      const lR = l.x + 20 + xPad;
+      if (pR > lL && pL < lR) {
+        const lyTop = l.y - l.h - yTopPad;
+        const lyBot = l.y + yBotPad;
+        if (p.y + p.h > lyTop && p.y < lyBot) {
+          const xDist = Math.abs((pL + pR) / 2 - (l.x + 10));
+          const lCY = l.y - l.h / 2;
+          const yDist = Math.abs(pCY - lCY);
+          const dist = xDist * 10 + yDist;
+          if (dist < bestDist) { bestDist = dist; best = l; }
+        }
       }
     }
-    return null;
+    return best;
   }
 
   _rect(a, b) {
     return a.x < b.x + b.w && a.x + a.w > b.x &&
-           a.y < b.y + b.h && a.y + a.h > b.y;
+      a.y < b.y + b.h && a.y + a.h > b.y;
   }
 
   _updateEnemy(e) {
@@ -1512,6 +1801,7 @@ class Game {
     this.nodieThisStage = false;
     SFX.hit(); // 🔊 피해 사운드
     if (this.lives <= 0) {
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
       this.running = false;
       cancelAnimationFrame(this.animId);
       this.gameOver = true;
@@ -1537,17 +1827,33 @@ class Game {
     const overlay = document.getElementById('overlay');
     document.getElementById('overlayTitle').textContent = title;
     document.getElementById('overlayMsg').textContent = msg;
-    document.getElementById('overlayBtn').textContent = btnText;
+    const btn = document.getElementById('overlayBtn');
+    btn.textContent = btnText;
     overlay.style.display = 'flex';
 
-    if (backToMenu) {
-      document.getElementById('overlayBtn').onclick = () => {
-        overlay.style.display = 'none';
+    btn.onclick = () => {
+      overlay.style.display = 'none';
+      if (backToMenu) {
         document.getElementById('selectScreen').style.display = 'flex';
         document.getElementById('controls').style.display = 'none';
         this._removeInput();
-      };
-    }
+      } else {
+        // RETRY: restart current stage
+        this._removeInput();
+        // DOM에서 선택된 캐릭터 다시 읽기 (stale this.charId 피하기)
+        const selCard = document.querySelector('.charCard.selected');
+        const retryCharId = selCard ? selCard.getAttribute('data-char') : (this.charId || 'raccoon');
+        const retryStage = (typeof this.stageIdx === 'number') ? this.stageIdx : 0;
+        if (window.game) {
+          window.game.running = false;
+          cancelAnimationFrame(window.game.animId);
+        }
+        window.game = new Game(retryCharId, retryStage);
+        window.game.start();
+      }
+    };
+    // HTML onclick="handleOverlayBtn()" 속성을 위한 global 노출
+    window.handleOverlayBtn = () => btn.onclick();
   }
 
   // ── 파티클 생성 ────────────────────────────────────────
@@ -1568,6 +1874,11 @@ class Game {
 
   // ── 렌더 ──────────────────────────────────────────────
   _draw() {
+    const ctx = this.ctx;
+    const c = this.ctx;
+    const W = this.W;
+    const H = this.H;
+
     ctx.fillStyle = '#000011';
     ctx.fillRect(0, 0, W, H);
 
@@ -1587,7 +1898,7 @@ class Game {
         const lx = l.x;
         // 사다리가 이 플랫폼 y에 닿는지: l.y(아랫끝) ≈ pl.y  OR  l.y - l.h(윗끝) ≈ pl.y
         const atBottom = Math.abs(l.y - pl.y) <= 4;
-        const atTop    = Math.abs((l.y - l.h) - pl.y) <= 4;
+        const atTop = Math.abs((l.y - l.h) - pl.y) <= 4;
         if ((atBottom || atTop) && lx >= pl.x - 2 && lx + 20 <= pl.x + pl.w + 2) {
           cuts.push({ x: lx, w: 20 });
         }
@@ -1699,9 +2010,9 @@ class Game {
 
     // TOP SCORE
     ctx.fillStyle = '#ffff00'; ctx.font = 'bold 9px "Courier New"';
-    ctx.fillText('TOP', W/2 - 28, 11);
+    ctx.fillText('TOP', W / 2 - 28, 11);
     ctx.fillStyle = '#ff6666'; ctx.font = 'bold 12px "Courier New"';
-    ctx.fillText(String(this.topScore).padStart(7, '0'), W/2 - 38, 26);
+    ctx.fillText(String(this.topScore).padStart(7, '0'), W / 2 - 38, 26);
 
     // STAGE + 하트
     ctx.fillStyle = '#00ffff'; ctx.font = 'bold 9px "Courier New"';
@@ -1716,7 +2027,7 @@ class Game {
     const sec = Math.floor(this.stageTimer / 60);
     const timerColor = sec > 50 ? '#ff4444' : sec > 35 ? '#ffaa00' : '#88ff88';
     ctx.fillStyle = timerColor; ctx.font = 'bold 10px "Courier New"';
-    ctx.fillText(`${String(sec).padStart(3,'0')}s`, W/2 + 20, 11);
+    ctx.fillText(`${String(sec).padStart(3, '0')}s`, W / 2 + 20, 11);
 
     // 콤보 표시
     if (this.combo >= 2) {
@@ -1739,9 +2050,9 @@ class Game {
       ix += 42;
     };
     if (this.effectInvincible > 0) drawEffect('★STAR', '#ffff00', this.effectInvincible, 300);
-    if (this.effectFreeze    > 0) drawEffect('❄STOP', '#88ddff', this.effectFreeze,     240);
-    if (this.effectMagnet    > 0) drawEffect('⊕MAGNET','#ff88ff', this.effectMagnet,    300);
-    if (this.effectSpeed     > 0) drawEffect('⚡SPEED','#88ff44', this.effectSpeed,      240);
+    if (this.effectFreeze > 0) drawEffect('❄STOP', '#88ddff', this.effectFreeze, 240);
+    if (this.effectMagnet > 0) drawEffect('⊕MAGNET', '#ff88ff', this.effectMagnet, 300);
+    if (this.effectSpeed > 0) drawEffect('⚡SPEED', '#88ff44', this.effectSpeed, 240);
 
     // 대시 쿨다운 (토끼)
     if (this.charId === 'rabbit') {
@@ -1763,7 +2074,7 @@ class Game {
     // 남은 과일
     const rem = this.fruits.filter(f => !f.collected).length;
     ctx.fillStyle = '#ffaa00'; ctx.font = '9px Courier New';
-    ctx.fillText(`LEFT:${rem}`, W/2 - 16, H - 136);
+    ctx.fillText(`LEFT:${rem}`, W / 2 - 16, H - 136);
 
     // 파티클
     for (const pt of this.particles) {
@@ -1784,13 +2095,14 @@ class Game {
       ctx.globalAlpha = 1;
     }
 
-    // 데일리 챌린지 진행 상태 (게임 중 우측 하단)
+    // 데일리 챌린지 진행 상태 (위쪽 HUD 두 번째 줄)
     const dailyDone = SAVE.get('dailyDate', '') === this.daily.date && SAVE.get('dailyDone', false);
     if (!dailyDone) {
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
-      ctx.fillRect(0, H - 160, W, 16);
-      ctx.fillStyle = '#ffcc00'; ctx.font = '8px Courier New';
-      ctx.fillText('DAILY: ' + this.daily.label, 4, H - 148);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(0, 30, W, 14);
+      ctx.fillStyle = '#ffcc00';
+      ctx.font = '7px Courier New';
+      ctx.fillText('DAILY: ' + this.daily.label, 4, 40);
     }
   }
 }
@@ -1865,7 +2177,7 @@ function openMissions() {
         ${done ? '✅' : '⬜'} ${m.label} <span style="color:#ffff00">+${m.reward}pt</span>
       </div>
       <div style="background:#222;height:5px;width:100%;border:1px solid #444;">
-        <div style="background:${done ? '#44ff88' : '#00aaff'};height:100%;width:${(progress/m.max)*100}%"></div>
+        <div style="background:${done ? '#44ff88' : '#00aaff'};height:100%;width:${(progress / m.max) * 100}%"></div>
       </div>
       <div style="font-size:9px;color:#666;">${progress} / ${m.max}</div>
     `;
@@ -1885,3 +2197,79 @@ function openMissions() {
 
   panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
 }
+
+let game;
+
+window.selectChar = function (el, cId) {
+  document.querySelectorAll('.charCard').forEach(c => c.classList.remove('selected'));
+  if (el) el.classList.add('selected');
+};
+
+window.closePages = function () {
+  document.querySelectorAll('.toss-page').forEach(p => p.style.display = 'none');
+};
+
+const CHAR_UNLOCK = {
+  raccoon: { unlocked: true, condition: null, label: '' },
+  fox: { unlocked: false, condition: s => s >= 3, label: 'STAGE 3 CLEAR' },
+  rabbit: { unlocked: false, condition: s => s >= 7, label: 'STAGE 7 CLEAR' },
+};
+
+window.getUnlocked = function () {
+  const clearedStage = SAVE.get('clearedStage', 0);
+  const result = {};
+  for (const [id, def] of Object.entries(CHAR_UNLOCK)) {
+    result[id] = def.unlocked || (def.condition && def.condition(clearedStage));
+  }
+  return result;
+};
+
+const DAILY_TYPES = [
+  { id: 'speedrun', label: '⚡ 제한시간 60초 안에 클리어!', check: g => g.stageTimer <= 60 * 60 },
+  { id: 'noitem', label: '🚫 아이템 없이 클리어!', check: g => g.itemsUsed === 0 },
+  { id: 'fullcombo', label: '🔥 콤보 끊기지 않고 전부 수집!', check: g => g.comboBroken === false },
+  { id: 'lives4', label: '❤ 목숨 4개 유지로 클리어!', check: g => g.lives >= 4 },
+];
+
+window.getTodayDaily = function () {
+  const today = new Date().toISOString().slice(0, 10);
+  const idx = today.split('-').reduce((a, v) => a + parseInt(v), 0) % DAILY_TYPES.length;
+  return { ...DAILY_TYPES[idx], date: today };
+};
+
+window.startGame = function () {
+  document.getElementById('selectScreen').style.display = 'none';
+  document.getElementById('controls').style.display = 'flex';
+  const bCta = document.getElementById('bottomCtaBtn');
+  if (bCta) bCta.style.display = 'none';
+
+  const selCard = document.querySelector('.charCard.selected');
+  const cId = selCard ? selCard.getAttribute('data-char') : 'raccoon';
+
+  if (window.game) {
+    window.game.running = false;
+    cancelAnimationFrame(window.game.animId);
+  }
+
+  const startStage = parseInt(SAVE.get('clearedStage', 0)) || 0;
+  window.game = new Game(cId, startStage);
+  window.game.start();
+
+  if (SAVE.get('opt_bgm', true) && typeof SFX !== 'undefined') {
+    if (typeof SFX.playBGM === 'function') SFX.playBGM();
+  }
+};
+
+window.onload = () => {
+  // 캐릭터 선택 화면 초기화
+  if (typeof updateSelectScreen === 'function') updateSelectScreen();
+  if (typeof drawSelectIcons === 'function') drawSelectIcons();
+
+  // 아이콘 애니메이션 (1초마다 업데이트)
+  setInterval(() => {
+    const selectScreen = document.getElementById('selectScreen');
+    if (selectScreen && selectScreen.style.display !== 'none') {
+      if (typeof drawSelectIcons === 'function') drawSelectIcons();
+    }
+  }, 1000);
+};

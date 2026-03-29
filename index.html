@@ -2,373 +2,392 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>RACCOON ADVENTURE</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+    :root {
+      --toss-blue: #3182F6;
+      --toss-blue-active: #1B64DA;
+      --toss-bg: #F2F4F6;
+      --toss-surface: #FFFFFF;
+      --toss-text-primary: #191F28;
+      --toss-text-secondary: #333D4B;
+      --toss-text-tertiary: #4E5968;
+      --toss-text-quaternary: #8B95A1;
+      --toss-border: #E5E8EB;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Pretendard', sans-serif; -webkit-tap-highlight-color: transparent; }
+    
     body {
-      background: #000;
+      background: var(--toss-bg);
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
       overflow: hidden;
-      font-family: 'Courier New', monospace;
+      color: var(--toss-text-primary);
     }
+    
     #gameContainer {
       position: relative;
-      width: 360px;
-      height: 640px;
-    }
-    canvas {
-      display: block;
       width: 100%;
+      max-width: 400px;
       height: 100%;
-      image-rendering: pixelated;
-    }
-    /* 캐릭터 선택 화면 */
-    #selectScreen {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: #000;
+      background: var(--toss-bg);
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    
+    @media (min-width: 400px) {
+      #gameContainer { width: 360px; height: 640px; border-radius: 20px; }
+    }
+
+    #canvasWrapper {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      justify-content: center;
       align-items: center;
-      color: #fff;
+      background: #E8F3FF;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    /* 토스 앱 스타일 메인 화면 */
+    #selectScreen {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: #FFFFFF;
+      display: flex; flex-direction: column;
       z-index: 10;
+      overflow: hidden;
     }
-    #selectScreen h1 {
-      font-size: 22px;
-      color: #00ffff;
-      text-shadow: 2px 2px #005555;
-      margin-top: 30px;
-      letter-spacing: 4px;
+
+    /* 토스 헤더바 */
+    .toss-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      position: sticky;
+      top: 0;
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(10px);
+      z-index: 20;
     }
-    #selectScreen h2 {
-      font-size: 12px;
-      color: #ffff00;
-      margin-top: 8px;
-      letter-spacing: 2px;
+    .header-title { font-size: 18px; font-weight: 700; color: var(--toss-text-primary); }
+    .header-point { 
+      font-size: 15px; font-weight: 700; color: var(--toss-text-secondary); 
+      background: #F2F4F6; padding: 6px 12px; border-radius: 12px;
+      display: flex; align-items: center; gap: 4px;
     }
+
+    /* 메인 타이틀 영역 */
+    .title-section {
+      padding: 12px 24px 8px 24px;
+    }
+    .title-section h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--toss-text-primary);
+      line-height: 1.35;
+      margin-bottom: 6px;
+      word-break: keep-all;
+    }
+    .title-section p {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--toss-text-tertiary);
+      line-height: 1.4;
+    }
+
+    /* 캐릭터 카드 리스트 */
     .charCards {
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      margin-top: 24px;
-      width: 90%;
     }
     .charCard {
-      border: 2px solid #444;
-      background: #111;
+      background: var(--toss-surface);
+      border: 1.5px solid var(--toss-border);
+      border-radius: 16px;
       padding: 12px 16px;
+      margin: 0 24px 10px 24px;
       cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
       display: flex;
       align-items: center;
       gap: 14px;
+      transition: all 0.2s;
     }
-    .charCard:hover, .charCard.selected {
-      border-color: #00ffff;
-      background: #001a1a;
+    .charCard:active { transform: scale(0.98); }
+    .charCard.selected {
+      border-color: var(--toss-blue);
+      background: #F2F7FF;
+      box-shadow: 0 4px 16px rgba(49, 130, 246, 0.1);
     }
     .charIcon {
-      width: 52px;
-      height: 52px;
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: var(--toss-bg);
+      padding: 4px;
       flex-shrink: 0;
     }
-    .charInfo { flex: 1; }
+    .charInfo { flex: 1; display: flex; flex-direction: column; justify-content: center; }
     .charName {
-      font-size: 14px;
-      font-weight: bold;
-      color: #00ffff;
-      letter-spacing: 2px;
-      margin-bottom: 4px;
+      font-size: 17px; font-weight: 700; color: var(--toss-text-primary); margin-bottom: 4px;
+      display: flex; justify-content: flex-start; align-items: center; gap: 8px;
+      white-space: nowrap; letter-spacing: -0.3px;
     }
-    .charDesc {
-      font-size: 10px;
-      color: #aaa;
-      margin-bottom: 6px;
-    }
-    .statRow {
+    .charDesc { font-size: 13px; font-weight: 500; color: var(--toss-text-quaternary); word-break: keep-all; }
+    
+    .charCard.locked { opacity: 0.6; background: #F9FAFB; cursor: not-allowed; }
+    .lockBadge { font-size: 11px; font-weight: 700; color: var(--toss-text-tertiary); margin-left: 6px; display:inline-block; background: #E5E8EB; padding: 2px 6px; border-radius: 4px; }
+
+    /* 서브 액션 버튼 */
+    .action-buttons {
       display: flex;
-      flex-direction: column;
-      gap: 3px;
+      gap: 10px;
+      margin: 0 24px 16px 24px;
     }
-    .statLine {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 9px;
-      color: #888;
-    }
-    .statLabel { width: 40px; color: #ffff00; }
-    .statBar {
+    .secondary-btn {
       flex: 1;
-      height: 6px;
-      background: #222;
-      border: 1px solid #444;
-    }
-    .statFill {
-      height: 100%;
-      background: #00ff88;
-    }
-    .statFill.mid { background: #ffaa00; }
-    .statFill.low { background: #ff4444; }
-    #startBtn {
-      margin-top: 20px;
-      padding: 12px 40px;
-      font-size: 16px;
-      font-family: 'Courier New', monospace;
-      letter-spacing: 4px;
-      background: #000;
-      color: #00ffff;
-      border: 2px solid #00ffff;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      background: var(--toss-bg);
+      color: var(--toss-text-secondary);
+      border: none;
+      border-radius: 12px;
       cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: background 0.1s;
     }
-    #startBtn:hover { background: #00ffff; color: #000; }
-    #startBtn:disabled { border-color: #333; color: #333; cursor: default; background: #000; }
+    .secondary-btn:hover { background: #E5E8EB; }
 
-    /* 잠금 뱃지 */
-    .charCard.locked { opacity: 0.5; cursor: default; }
-    .charCard.locked:hover { border-color: #444 !important; background: #111 !important; }
-    .lockBadge {
-      font-size: 9px; color: #ff8844; margin-top: 4px;
-      letter-spacing: 1px;
-    }
-
-    /* 미션 패널 */
-    #missionBtn {
-      margin-top: 8px;
-      padding: 6px 20px;
-      font-size: 11px;
-      font-family: 'Courier New', monospace;
-      letter-spacing: 2px;
-      background: #000;
-      color: #ffaa00;
-      border: 1px solid #ffaa00;
-      cursor: pointer;
-      width: 90%;
-    }
-    #missionBtn:hover { background: #1a0e00; }
-    #missionPanel {
+    /* 풀페이지 모달 패널들 (Toss Page Style) */
+    .toss-page {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: var(--toss-bg);
+      z-index: 50;
       display: none;
-      width: 90%;
-      background: #0a0a0a;
-      border: 1px solid #333;
-      padding: 10px;
-      margin-top: 6px;
-      max-height: 200px;
+      flex-direction: column;
       overflow-y: auto;
-      font-family: 'Courier New', monospace;
-      font-size: 10px;
-      color: #ccc;
     }
-    #dailyInfo {
-      font-size: 9px;
-      margin-top: 6px;
-      letter-spacing: 1px;
-      text-align: center;
-      width: 90%;
+    .toss-app-bar {
+      position: sticky; top: 0;
+      width: 100%; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 8px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+      z-index: 60;
+      border-bottom: 1px solid var(--toss-border);
     }
+    .toss-app-bar h2 { font-size: 18px; font-weight: 700; color: var(--toss-text-primary); margin: 0; letter-spacing: -0.5px; }
+    .btn-icon { background: none; border: none; font-size: 24px; font-weight: 300; color: var(--toss-text-secondary); cursor: pointer; padding: 12px; }
+    .btn-icon:active { background: #f2f4f6; border-radius: 50%; }
+    #dailyInfo { margin: 0 24px 24px 24px; font-size: 13px; text-align: center; color: var(--toss-text-quaternary); }
 
-    /* 게임 오버 / 스테이지 클리어 오버레이 */
+    /* 하단 고정 시작 버튼 */
+    .bottom-cta {
+      position: absolute;
+      bottom: 0px; 
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 400px;
+      padding: 12px 24px 16px 24px; 
+      background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #FFFFFF 30%);
+      z-index: 20;
+    }
+    #startBtn {
+      width: 100%;
+      padding: 18px;
+      font-size: 17px;
+      font-weight: 700;
+      background: var(--toss-blue);
+      color: #ffffff;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(49,130,246,0.25);
+      transition: transform 0.1s;
+    }
+    #startBtn:active { transform: scale(0.98); background: var(--toss-blue-active); }
+
+    /* 게임 오버 오버레이 (Toss Style) */
     #overlay {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0,0,0,0.75);
+      background: rgba(25, 31, 40, 0.5); 
+      backdrop-filter: blur(8px);
       display: none;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 20;
+      z-index: 30;
+    }
+    .overlay-card {
+      background: #FFFFFF;
+      width: 80%;
+      max-width: 320px;
+      border-radius: 24px;
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.2);
+    }
+    #overlayTitle { font-size: 24px; font-weight: 800; color: var(--toss-text-primary); margin-bottom: 12px; }
+    #overlayMsg { font-size: 15px; color: var(--toss-text-secondary); text-align: center; line-height: 1.5; white-space: pre-wrap; margin-bottom: 24px; font-weight: 500; }
+    .overlay-btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      background: var(--toss-blue);
       color: #fff;
-    }
-    #overlay h2 {
-      font-size: 28px;
-      letter-spacing: 4px;
-      text-shadow: 2px 2px #000;
-    }
-    #overlay p { margin-top: 10px; font-size: 14px; color: #aaa; }
-    #overlay button {
-      margin-top: 24px;
-      padding: 10px 32px;
-      font-size: 14px;
-      font-family: 'Courier New', monospace;
-      letter-spacing: 3px;
-      background: #000;
-      color: #ffff00;
-      border: 2px solid #ffff00;
+      border: none;
+      border-radius: 14px;
       cursor: pointer;
     }
-    #overlay button:hover { background: #ffff00; color: #000; }
+    .overlay-btn:active { background: var(--toss-blue-active); }
 
-    /* 터치 컨트롤 */
+    /* 인게임 터치 컨트롤 (Toss Style Dedicated Layout) */
     #controls {
-      position: absolute;
-      bottom: 0; left: 0;
-      width: 100%;
-      height: 130px;
-      display: none;
-      pointer-events: none;
+      position: relative; 
+      width: 100%; 
+      height: 140px;
+      flex-shrink: 0;
+      background: #FFFFFF;
+      border-top: 1px solid var(--toss-border);
+      display: none; 
+      pointer-events: auto; 
       z-index: 5;
     }
+    
     .dpad {
-      position: absolute;
-      left: 12px;
-      bottom: 16px;
-      width: 130px;
-      height: 114px;
-      pointer-events: auto;
+      position: absolute; left: 24px; top: 10px; width: 120px; height: 120px;
+      pointer-events: auto; background: #F2F4F6; border-radius: 50%;
     }
     .dpad-btn {
-      position: absolute;
-      width: 38px;
-      height: 38px;
-      background: rgba(255,255,255,0.12);
-      border: 2px solid rgba(255,255,255,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      color: rgba(255,255,255,0.7);
-      user-select: none;
-      -webkit-user-select: none;
+      position: absolute; width: 40px; height: 40px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #4E5968; background: #E5E8EB; font-weight: 800;
+      user-select: none; -webkit-user-select: none; transition: background 0.1s;
     }
-    #btnUp    { left: 46px; top: 0; }
-    #btnLeft  { left: 0;    top: 38px; }
-    #btnRight { left: 92px; top: 38px; }
-    #btnDown  { left: 46px; top: 76px; }
+    
+    #btnUp    { left: 40px; top: 0; }
+    #btnLeft  { left: 0;    top: 40px; }
+    #btnRight { left: 80px; top: 40px; }
+    #btnDown  { left: 40px; top: 80px; }
 
     #btnJump {
-      position: absolute;
-      right: 16px;
-      bottom: 20px;
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      background: rgba(0, 220, 100, 0.18);
-      border: 2px solid rgba(0, 220, 100, 0.5);
-      color: rgba(0,220,100,0.9);
-      font-size: 11px;
-      letter-spacing: 1px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: auto;
-      user-select: none;
-      -webkit-user-select: none;
+      position: absolute; right: 24px; top: 30px; width: 80px; height: 80px;
+      border-radius: 50%; background: var(--toss-blue); color: #fff;
+      font-weight: 800; font-size: 16px; display: flex; align-items: center; justify-content: center;
+      pointer-events: auto; user-select: none; -webkit-user-select: none;
+      box-shadow: 0 8px 24px rgba(49,130,246,0.25); transition: all 0.1s;
     }
+    .btn-active { background: #E5E8EB !important; transform: scale(0.95); }
+    #btnJump.btn-active { background: var(--toss-blue-active) !important; box-shadow: 0 4px 12px rgba(49,130,246,0.15); }
 
-    .btn-active {
-      background: rgba(255,255,255,0.3) !important;
-      border-color: rgba(255,255,255,0.7) !important;
-    }
-    #btnJump.btn-active {
-      background: rgba(0, 220, 100, 0.45) !important;
-      border-color: rgba(0,220,100,1) !important;
-    }
+    /* 토스 스타일 스위치 */
+    .toss-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+    .toss-switch input { opacity: 0; width: 0; height: 0; }
+    .toss-switch .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #E5E8EB; transition: .3s; border-radius: 26px; }
+    .toss-switch .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .toss-switch input:checked + .slider { background-color: var(--toss-blue); }
+    .toss-switch input:checked + .slider:before { transform: translateX(22px); }
   </style>
 </head>
 <body>
 <div id="gameContainer">
-  <canvas id="gameCanvas" width="360" height="640"></canvas>
+  <div id="canvasWrapper">
+    <canvas id="gameCanvas" width="360" height="640"></canvas>
+    
+    <!-- 🐛 디버그용 스테이지 이동 버튼 (배포 시 제거) -->
+    <div id="debugStageSkip" style="position:absolute; top: 10px; right: 10px; z-index: 100; display: none; gap: 5px;">
+      <button id="btnPrevStage" style="padding: 6px 10px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">⏪ 이전 맵</button>
+      <button id="btnNextStage" style="padding: 6px 10px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">다음 맵 ⏩</button>
+    </div>
+  </div>
 
-  <!-- 캐릭터 선택 화면 -->
   <div id="selectScreen">
-    <h1>RACCOON</h1>
-    <h2>ADVENTURE</h2>
-    <div class="charCards">
+    <div class="toss-header">
+      <div style="display:flex; align-items:center; gap: 4px;">
+        <button onclick="openSettings()" style="background:none;border:none;font-size:22px;cursor:pointer;padding:0;margin-right:4px;">⚙️</button>
+        <div class="header-title">미니게임</div>
+      </div>
+      <div class="header-point"><span style="color:#FFC000; margin-right:2px;">🪙</span> <span id="pointVal">0</span> 원</div>
+    </div>
 
-      <!-- 너구리 -->
+    <div class="title-section">
+      <h1>원하는 캐릭터를 골라<br>모험을 떠나볼까요?</h1>
+      <p>방향키와 점프를 사용해 멀리 이동해보세요.</p>
+    </div>
+    
+    <div class="charCards">
       <div class="charCard selected" data-char="raccoon" onclick="selectChar(this,'raccoon')">
         <canvas class="charIcon" id="icon0" width="52" height="52"></canvas>
         <div class="charInfo">
-          <div class="charName">RACCOON</div>
-          <div class="charDesc">밸런스형 · 기본 주인공</div>
-          <div class="statRow">
-            <div class="statLine">
-              <span class="statLabel">SPEED</span>
-              <div class="statBar"><div class="statFill mid" style="width:60%"></div></div>
-            </div>
-            <div class="statLine">
-              <span class="statLabel">JUMP</span>
-              <div class="statBar"><div class="statFill mid" style="width:60%"></div></div>
-            </div>
-            <div class="statLine">
-              <span class="statLabel">SKILL</span>
-              <div class="statBar"><div class="statFill mid" style="width:50%"></div></div>
-            </div>
-          </div>
+          <div class="charName">너구리</div>
+          <div class="charDesc">무난하고 안정적인 밸런스형 영웅</div>
         </div>
       </div>
-
-      <!-- 여우 -->
       <div class="charCard" data-char="fox" onclick="selectChar(this,'fox')">
         <canvas class="charIcon" id="icon1" width="52" height="52"></canvas>
         <div class="charInfo">
-          <div class="charName">FOX</div>
-          <div class="charDesc">점프형 · 2단 점프 가능</div>
-          <div class="statRow">
-            <div class="statLine">
-              <span class="statLabel">SPEED</span>
-              <div class="statBar"><div class="statFill low" style="width:35%"></div></div>
-            </div>
-            <div class="statLine">
-              <span class="statLabel">JUMP</span>
-              <div class="statBar"><div class="statFill" style="width:90%"></div></div>
-            </div>
-            <div class="statLine">
-              <span class="statLabel">SKILL</span>
-              <div class="statBar"><div class="statFill" style="width:85%"></div></div>
-            </div>
-          </div>
+          <div class="charName">사막 여우</div>
+          <div class="charDesc">공중에서 한 번 더 2단 점프가 가능해요</div>
         </div>
       </div>
-
-      <!-- 토끼 -->
       <div class="charCard" data-char="rabbit" onclick="selectChar(this,'rabbit')">
         <canvas class="charIcon" id="icon2" width="52" height="52"></canvas>
         <div class="charInfo">
-          <div class="charName">RABBIT</div>
-          <div class="charDesc">스피드형 · 대시 스킬</div>
-          <div class="statRow">
-            <div class="statLine">
-              <span class="statLabel">SPEED</span>
-              <div class="statBar"><div class="statFill" style="width:95%"></div></div>
-            </div>
-            <div class="statLine">
-              <span class="statLabel">JUMP</span>
-              <div class="statBar"><div class="statFill low" style="width:35%"></div></div>
-            </div>
-            <div class="statLine">
-              <span class="statLabel">SKILL</span>
-              <div class="statBar"><div class="statFill mid" style="width:70%"></div></div>
-            </div>
-          </div>
+          <div class="charName">토끼</div>
+          <div class="charDesc">빠르게 전방으로 가로지르는 대시 스킬</div>
         </div>
       </div>
-
     </div>
+
+    <div class="action-buttons">
+      <button id="shopBtn" class="secondary-btn" onclick="openShop()">👕 스킨 상점</button>
+      <button id="missionBtn" class="secondary-btn" onclick="openMissions()">🎯 미션 & 챌린지</button>
+    </div>
+
+    <div id="settingsPanel" class="toss-page"></div>
+    <div id="shopPanel" class="toss-page"></div>
+    <div id="missionPanel" class="toss-page"></div>
     <div id="dailyInfo"></div>
-    <button id="missionBtn" onclick="openMissions()">▶ MISSIONS &amp; DAILY</button>
-    <div id="missionPanel"></div>
-    <div style="margin-top:10px;font-size:9px;color:#555;letter-spacing:1px;text-align:center;line-height:1.8;">
-      ARROW KEYS / WASD · SPACE = JUMP<br>
-      RABBIT: JUMP×2 = DASH &nbsp;|&nbsp; FOX: AIR JUMP
-    </div>
-    <button id="startBtn" onclick="startGame()">START</button>
   </div>
 
-  <!-- 게임 오버 / 클리어 오버레이 -->
+  <div class="bottom-cta" id="bottomCtaBtn">
+    <button id="startBtn" onclick="startGame()">도전하기</button>
+  </div>
+
   <div id="overlay">
-    <h2 id="overlayTitle"></h2>
-    <p id="overlayMsg"></p>
-    <button id="overlayBtn" onclick="handleOverlayBtn()"></button>
+    <div class="overlay-card">
+      <h2 id="overlayTitle"></h2>
+      <p id="overlayMsg"></p>
+      <button id="overlayBtn" class="overlay-btn" onclick="handleOverlayBtn()"></button>
+    </div>
   </div>
 
-  <!-- 터치 컨트롤 -->
   <div id="controls">
     <div class="dpad">
       <div class="dpad-btn" id="btnUp">▲</div>
@@ -380,10 +399,10 @@
   </div>
 </div>
 
-<script src="game.js"></script>
+<script src="toss-api.js?v=23"></script>
+<script src="game.js?v=23"></script>
 <script>
-  // game.js 로드 후 선택 화면 초기화
-  updateSelectScreen();
+  if (typeof updateSelectScreen === 'function') updateSelectScreen();
 </script>
 </body>
 </html>
