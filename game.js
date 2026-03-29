@@ -1263,9 +1263,14 @@ class Game {
     if (!p) return;
     if (p.onGround) {
       // ★ 아래 키를 누르고 있으면 플랫폼 통과 모드 활성화
+      // 단, 사다리가 근처에 있으면 플랫폼 통과 대신 사다리 우선
       if (this.keys.down) {
-        p.fallThrough = 20; // 20프레임(약 0.33초) 동안 플랫폼 통과
-  
+        const nearLadder = this._getNearLadder(p, false);
+        if (!nearLadder) {
+          p.fallThrough = 20; // 20프레임(약 0.33초) 동안 플랫폼 통과
+        }
+        // 사다리가 있으면 플랫폼 통과 하지 않음 (사다리 진입 대기)
+        return; // 아래 키 + 스페이스 = 사다리 내려가기이므로 점프 취소
       }
       p.vy = this.charDef.jumpForce;
       p.onGround = false;
@@ -1423,24 +1428,28 @@ class Game {
         const playerBottom = p.y + p.h;
         const playerTop = p.y;
 
-        // ★ 아래에서 UP: 플레이어 바닥이 사다리 아래쪽 바로 근처에 있어야
-        const nearBottom = playerBottom >= ladderBottom - 8 && playerBottom <= ladderBottom + 24;
-        // ★ 위에서 DOWN: 플레이어 발이 사다리 위쪽(꼭대기 플랫폼) 근처에 있어야
-        //   플랫폼 위에 서있으면 playerBottom ≈ ladderTop 이므로 playerBottom 기준으로 비교
-        const nearTop = playerBottom >= ladderTop - 8 && playerBottom <= ladderTop + 24;
-
-        if (this.keys.up && nearBottom) {
-          p.onLadder = true;
-          p.onGround = false;
-          p.x = entryL.x + 1;
-          p.vx = 0;
-          p.vy = 0;
-        } else if (this.keys.down && nearTop) {
-          p.onLadder = true;
-          p.onGround = false;
-          p.x = entryL.x + 1;
-          p.vx = 0;
-          p.vy = 0;
+        // 위로 올라가기: 사다리 범위 내에서 UP 키
+        if (this.keys.up) {
+          // 플레이어가 사다리 하단 근처에 있으면 진입
+          if (playerBottom >= ladderTop - 30 && playerBottom <= ladderBottom + 30) {
+            p.onLadder = true;
+            p.onGround = false;
+            p.x = entryL.x + 1;
+            p.vx = 0;
+            p.vy = 0;
+          }
+        }
+        // 아래로 내려가기: 사다리 범위 내에서 DOWN 키
+        else if (this.keys.down) {
+          // 플레이어가 사다리 상단 근처에 있으면 진입 (더 관대하게)
+          // 플랫폼 위에 서있거나(playerBottom ≈ ladderTop) 약간 위에 있어도 OK
+          if (playerBottom >= ladderTop - 30 && playerTop <= ladderTop + 30) {
+            p.onLadder = true;
+            p.onGround = false;
+            p.x = entryL.x + 1;
+            p.vx = 0;
+            p.vy = 0;
+          }
         }
       }
     }
@@ -1705,8 +1714,8 @@ class Game {
     const pR = p.x + p.w;
     const pCY = p.y + p.h / 2;
     const xPad = sticky ? 8 : 5;
-    const yTopPad = sticky ? 8 : 0;  // ★ sticky: 8px만 (이전 15px에서 축소) -- 마궁 빠져나도 레이더 끝에서 온도 알아
-    const yBotPad = sticky ? 15 : 0; // 진입: AABB 전체 포지 없음, 위치 체크는 진입 조건에서
+    const yTopPad = sticky ? 8 : 10;  // ★ 진입 시에도 10px 여유를 주어 플랫폼 위에서 감지 가능하게 함
+    const yBotPad = sticky ? 15 : 10; // 진입 시에도 10px 여유
 
     let best = null;
     let bestDist = Infinity;
