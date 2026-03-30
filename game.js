@@ -232,13 +232,34 @@ SPRITES.rabbit_jump.src = 'sprites/rabbit_jump.png?v=3';
 // 이미지 로드 완료 대기
 let imagesLoaded = 0;
 const totalImages = 9;
+let allImagesLoaded = false;
+
+function checkAllImagesLoaded() {
+  if (imagesLoaded >= totalImages && !allImagesLoaded) {
+    allImagesLoaded = true;
+    // 개발 모드에서만 로그 출력
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      console.log('✅ 모든 이미지 로드 완료!');
+    }
+    // 로딩 완료 후 UI 업데이트
+    if (typeof drawSelectIcons === 'function') drawSelectIcons();
+  }
+}
+
 Object.values(SPRITES).forEach(img => {
   img.onload = () => {
     imagesLoaded++;
-    console.log(`이미지 로드: ${imagesLoaded}/${totalImages}`);
+    // 개발 모드에서만 로그
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      console.log(`이미지 로드: ${imagesLoaded}/${totalImages}`);
+    }
+    checkAllImagesLoaded();
   };
   img.onerror = () => {
-    console.error('이미지 로드 실패:', img.src);
+    // 에러는 항상 로그
+    console.error('❌ 이미지 로드 실패:', img.src);
+    imagesLoaded++; // 실패해도 카운트 증가 (무한 대기 방지)
+    checkAllImagesLoaded();
   };
 });
 
@@ -1238,9 +1259,10 @@ class Game {
         const touch = e.targetTouches[0];
         if (!touch) return;
 
-        // 컨테이너 기준 상대 좌표 계산
-        const x = touch.clientX - (rect.left + window.scrollX) - centerX;
-        const y = touch.clientY - (rect.top + window.scrollY) - centerY;
+        // 컨테이너 기준 상대 좌표 계산 (스크롤 무관하게 수정)
+        const containerRect = container.getBoundingClientRect();
+        const x = touch.clientX - containerRect.left - centerX;
+        const y = touch.clientY - containerRect.top - centerY;
 
         const distance = Math.sqrt(x * x + y * y);
         const angle = Math.atan2(y, x);
@@ -1385,7 +1407,6 @@ class Game {
     });
 
     this.player = {
-      fallThrough: 0,
       x: spawnX,
       y: firstPlat.y - 32,
       w: 26, h: 28,
@@ -1399,7 +1420,7 @@ class Game {
       dashDir: 1,
       frame: 0,
       frameTimer: 0,
-      fallThrough: 0, // ★ 플랫폼 통과 타이머
+      fallThrough: 0, // 플랫폼 통과 타이머
     };
   }
 
@@ -1442,16 +1463,16 @@ class Game {
     const GRAVITY = 0.55;
     const FRICTION = 0.75;
 
-    // 대시 쿨다운
+    // 대시 쿨다운 & 플랫폼 통과 타이머 감소
     if (p.dashCooldown > 0) p.dashCooldown--;
     if (p.fallThrough > 0) p.fallThrough--;
 
-    // ★ 플랫폼 통과 타이머 감소 (이미 위에서 감소했으므로 중복 제거)
-
     // 좌우 이동
     let moveX = 0;
-    if (this.keys.left) { moveX = -def.speed; p.facingLeft = true; }
-    if (this.keys.right) { moveX = def.speed; p.facingLeft = false; }
+    // ⚡ Speed 아이템 효과 적용
+    const speedMultiplier = this.effectSpeed > 0 ? 1.8 : 1.0;
+    if (this.keys.left) { moveX = -def.speed * speedMultiplier; p.facingLeft = true; }
+    if (this.keys.right) { moveX = def.speed * speedMultiplier; p.facingLeft = false; }
 
     // 대시 오버라이드
     if (p.dashTimer > 0) {
@@ -1461,6 +1482,11 @@ class Game {
       if (this.frameCount % 2 === 0) {
         this._spawnParticles(p.x + p.w / 2, p.y + p.h / 2, '#ccccff', 3);
       }
+    }
+
+    // ⚡ Speed 효과 시각 효과
+    if (this.effectSpeed > 0 && this.frameCount % 3 === 0) {
+      this._spawnParticles(p.x + p.w / 2, p.y + p.h, '#88ff44', 2);
     }
 
     // ══════════════════════════════════════════════════
@@ -1527,10 +1553,42 @@ class Game {
         p.ladderGrace = 0;
       } else {
         p.ladderGrace = 0;
-        // 쬈 방향부터 자연스럽게 이동 (경계 이탈 로직 제거)
-        if (this.keys.up) { p.vy = -3.2; }
-        else if (this.keys.down) { p.vy = 3.2; }
-        else { p.vy = 0; } // 키 없으면 정지
+
+        // ★ 사다리 경계 체크 - 이동하기 전에 확인
+        const ladderTop = activeL.y - activeL.h;
+        const ladderBottom = activeL.y;
+        const playerBottom = p.y + p.h;
+        const playerTop = p.y;
+
+        // 위로 이동 시도
+        if (this.keys.up) {
+          const nextPlayerBottom = playerBottom - 3.2;
+          // 사다리 위쪽 끝을 넘어가면 이탈
+          if (nextPlayerBottom < ladderTop) {
+            p.onLadder = false;
+            p.onGround = false;
+            p.vy = 0;
+          } else {
+            p.vy = -3.2;
+          }
+        }
+        // 아래로 이동 시도
+        else if (this.keys.down) {
+          const nextPlayerTop = playerTop + 3.2;
+          // 사다리 아래쪽 끝을 넘어가면 이탈
+          if (nextPlayerTop > ladderBottom) {
+            p.onLadder = false;
+            p.onGround = false;
+            p.vy = 3.2;
+          } else {
+            p.vy = 3.2;
+          }
+        }
+        // 정지
+        else {
+          p.vy = 0;
+        }
+
         p.vx = 0;
         moveX = 0;
         p.onGround = false;
@@ -1956,15 +2014,25 @@ class Game {
     const W = this.W;
     const H = this.H;
 
-    ctx.fillStyle = '#000011';
-    ctx.fillRect(0, 0, W, H);
+    // 배경 이미지 렌더링 (로드되었으면)
+    if (BG_IMAGE.complete && BG_IMAGE.naturalWidth > 0) {
+      ctx.drawImage(BG_IMAGE, 0, 0, W, H);
+    } else {
+      // 이미지 로드 안 됐으면 기본 배경
+      ctx.fillStyle = '#87CEEB'; // 하늘색
+      ctx.fillRect(0, 0, W, H);
+    }
 
-    // 배경 별
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    for (let i = 0; i < 40; i++) {
-      const bx = (i * 73 + this.stageIdx * 11) % W;
-      const by = (i * 137) % (H - 130);
-      ctx.fillRect(bx, by, i % 3 === 0 ? 2 : 1, i % 3 === 0 ? 2 : 1);
+    // 배경 구름 효과 (선택적)
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    for (let i = 0; i < 5; i++) {
+      const cx = ((i * 120 + this.frameCount * 0.2) % (W + 100)) - 50;
+      const cy = 50 + i * 40;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 30, 0, Math.PI * 2);
+      ctx.arc(cx + 25, cy, 35, 0, Math.PI * 2);
+      ctx.arc(cx + 50, cy, 30, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // 플랫폼 — 사다리가 지나가는 x 구간은 빈칸으로 남기고 좌우만 그림
@@ -2285,6 +2353,41 @@ window.selectChar = function (el, cId) {
 window.closePages = function () {
   document.querySelectorAll('.toss-page').forEach(p => p.style.display = 'none');
 };
+
+// 🐛 Debug 모드 토글 (개발용 - 콘솔에서 toggleDebugMode() 호출)
+window.toggleDebugMode = function() {
+  const debugPanel = document.getElementById('debugStageSkip');
+  if (debugPanel) {
+    const isVisible = debugPanel.style.display !== 'none';
+    debugPanel.style.display = isVisible ? 'none' : 'flex';
+    if (!isVisible && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      console.log('🐛 Debug mode activated - Use arrow buttons to skip stages');
+    }
+  }
+};
+
+// Debug 버튼 이벤트 설정 (페이지 로드 시)
+window.addEventListener('load', () => {
+  const btnNext = document.getElementById('btnNextStage');
+  const btnPrev = document.getElementById('btnPrevStage');
+
+  if (btnNext && window.game) {
+    btnNext.addEventListener('click', () => {
+      if (window.game && window.game.running) {
+        window.game.nextStage();
+      }
+    });
+  }
+
+  if (btnPrev && window.game) {
+    btnPrev.addEventListener('click', () => {
+      if (window.game && window.game.stageIdx > 0) {
+        window.game.stageIdx -= 2; // -2 because nextStage will +1
+        window.game.nextStage();
+      }
+    });
+  }
+});
 
 const CHAR_UNLOCK = {
   raccoon: { unlocked: true, condition: null, label: '' },
