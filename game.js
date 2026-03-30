@@ -1476,10 +1476,16 @@ class Game {
         const playerBottom = p.y + p.h;
         const playerTop = p.y;
 
+        // ★★★ 사다리 진입 범위 조절 부분 ★★★
+
         // 위로 올라가기: 사다리 범위 내에서 UP 키
         if (this.keys.up) {
-          // 플레이어가 사다리 근처에 있으면 진입 (범위 축소)
-          if (playerBottom >= ladderTop - 15 && playerBottom <= ladderBottom + 15) {
+          // 플레이어 발(playerBottom)이 사다리 상단~하단 사이에 있어야 진입
+          // 숫자를 줄이면 더 정확한 위치에서만 진입 가능
+          const upEntryTop = ladderTop - 10;    // 15→10 (더 좁게)
+          const upEntryBottom = ladderBottom + 10; // 15→10 (더 좁게)
+
+          if (playerBottom >= upEntryTop && playerBottom <= upEntryBottom) {
             p.onLadder = true;
             p.onGround = false;
             p.x = entryL.x + 1;
@@ -1489,8 +1495,12 @@ class Game {
         }
         // 아래로 내려가기: 사다리 범위 내에서 DOWN 키
         else if (this.keys.down) {
-          // 플레이어가 사다리 상단 근처에 있으면 진입 (범위 축소)
-          if (playerBottom >= ladderTop - 10 && playerTop <= ladderTop + 20) {
+          // 플레이어가 사다리 상단 플랫폼 위에 있어야 진입
+          // 숫자를 줄이면 더 정확한 위치에서만 진입 가능
+          const downEntryTop = ladderTop - 5;  // 10→5 (더 좁게)
+          const downEntryBottom = ladderTop + 15; // 20→15 (더 좁게)
+
+          if (playerBottom >= downEntryTop && playerTop <= downEntryBottom) {
             p.onLadder = true;
             p.onGround = false;
             p.x = entryL.x + 1;
@@ -1761,11 +1771,13 @@ class Game {
     const pR = p.x + p.w;
     const pCenterX = (pL + pR) / 2;
 
-    // X축: 실제로 겹쳐야 감지 (패딩 최소화)
-    const xPad = sticky ? 4 : 2;
-    // Y축: 진입/탑승 모두 좁은 범위로 통일
-    const yTopPad = sticky ? 8 : 12;
-    const yBotPad = sticky ? 8 : 12;
+    // ★★★ 사다리 감지 범위 조절 부분 ★★★
+    // X축 패딩: 사다리 좌우로 얼마나 여유를 둘지 (픽셀 단위)
+    const xPad = sticky ? 2 : 0;  // 4→2, 2→0 (더 좁게)
+
+    // Y축 패딩: 사다리 위아래로 얼마나 여유를 둘지 (픽셀 단위)
+    const yTopPad = sticky ? 5 : 8;   // 8→5, 12→8 (더 좁게)
+    const yBotPad = sticky ? 5 : 8;   // 8→5, 12→8 (더 좁게)
 
     let best = null;
     let bestDist = Infinity;
